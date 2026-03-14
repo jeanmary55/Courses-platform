@@ -10,6 +10,8 @@ import Signup from './pages/Signup';
 import CourseDetail from './pages/CourseDetail';
 import Checkout from './pages/Checkout';
 import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentPending from './pages/PaymentPending';
+import PaymentFailure from './pages/PaymentFailure';
 import MyCourses from './pages/MyCourses';
 import '@/App.css';
 
@@ -27,6 +29,8 @@ function App() {
               <Route path="/course/:courseId" element={<CourseDetail />} />
               <Route path="/checkout/:courseId" element={<Checkout />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-pending" element={<PaymentPending />} />
+              <Route path="/payment-failure" element={<PaymentFailure />} />
               <Route path="/my-courses" element={<MyCourses />} />
             </Routes>
             <Toaster position="top-center" richColors />

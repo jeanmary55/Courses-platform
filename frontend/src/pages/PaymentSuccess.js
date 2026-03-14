@@ -1,29 +1,22 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/ui/button';
-import { CheckCircle2, Copy, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function PaymentSuccess() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [copied, setCopied] = useState(false);
+  const [searchParams] = useSearchParams();
 
-  const { accessCode, courseTitle } = location.state || {};
+  useEffect(() => {
+    // Auto redirect after 5 seconds
+    const timer = setTimeout(() => {
+      navigate('/my-courses');
+    }, 5000);
 
-  if (!accessCode) {
-    navigate('/');
-    return null;
-  }
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(accessCode);
-    setCopied(true);
-    toast.success(t('codeCopied'));
-    setTimeout(() => setCopied(false), 2000);
-  };
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-violet-50 flex items-center justify-center px-6" data-testid="payment-success-page">
@@ -38,61 +31,43 @@ export default function PaymentSuccess() {
 
           {/* Success Message */}
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-            {t('paymentSuccess')}
+            Pagamento Aprovado!
           </h1>
           <p className="text-lg text-slate-600 mb-8">
-            {t('accessCodeGenerated')}
+            Seu curso foi liberado e já está disponível em "Meus Cursos"
           </p>
 
-          {/* Course Info */}
-          <div className="mb-8 p-4 bg-violet-50 rounded-lg">
-            <p className="text-sm text-slate-600 mb-1">Curso adquirido:</p>
-            <p className="text-lg font-semibold text-violet-600">{courseTitle}</p>
-          </div>
-
-          {/* Access Code Display */}
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-slate-700 mb-3">
-              {t('accessCode')}
-            </label>
-            <div className="bg-slate-50 border-2 border-violet-200 rounded-xl p-6 mb-4">
-              <div className="text-3xl md:text-4xl font-bold text-violet-600 tracking-wider font-mono mb-4" data-testid="access-code-display">
-                {accessCode}
-              </div>
-              <Button
-                onClick={handleCopyCode}
-                variant="outline"
-                className="gap-2"
-                data-testid="copy-access-code"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {t('copyCode')}
-              </Button>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-              <p className="font-medium mb-1">⚠️ {t('saveAccessCode')}</p>
-              <p>{t('accessCodeDesc')}</p>
-            </div>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-8">
+            <p className="text-sm text-emerald-800">
+              ✅ Acesso vitalício garantido<br/>
+              ✅ Todas as 20 aulas já disponíveis<br/>
+              ✅ Comece a estudar agora mesmo!
+            </p>
           </div>
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={() => navigate('/my-courses')}
-              className="bg-violet-600 hover:bg-violet-700"
+              className="bg-violet-600 hover:bg-violet-700 gap-2"
               size="lg"
               data-testid="go-to-my-courses"
             >
-              {t('goToMyCourses')}
+              Acessar Meu Curso
+              <ArrowRight className="w-5 h-5" />
             </Button>
             <Button
               onClick={() => navigate('/')}
               variant="outline"
               size="lg"
             >
-              {t('home')}
+              Voltar ao Início
             </Button>
           </div>
+
+          <p className="text-sm text-slate-500 mt-6">
+            Você será redirecionado automaticamente em 5 segundos...
+          </p>
         </div>
       </div>
     </div>

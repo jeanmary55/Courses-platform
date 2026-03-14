@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -15,6 +15,7 @@ import jwt
 import base64
 import random
 import string
+import mercadopago
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,6 +29,11 @@ db = client[os.environ['DB_NAME']]
 JWT_SECRET = os.environ.get('JWT_SECRET', 'shalom-learning-secret-key-2024')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
+
+# Mercado Pago Configuration
+MERCADOPAGO_ACCESS_TOKEN = os.environ['MERCADOPAGO_ACCESS_TOKEN']
+MERCADOPAGO_PUBLIC_KEY = os.environ['MERCADOPAGO_PUBLIC_KEY']
+sdk = mercadopago.SDK(MERCADOPAGO_ACCESS_TOKEN)
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -78,17 +84,15 @@ class Course(BaseModel):
 
 class PaymentCreate(BaseModel):
     courseId: str
-    receiptData: str  # Base64 encoded receipt
 
 class Payment(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     userId: str
     courseId: str
-    pixCode: str
-    receiptData: str
+    mercadopagoId: str
     status: str
-    accessCode: str
+    amount: float
     createdAt: str
 
 # ==================== Helper Functions ====================
@@ -341,46 +345,126 @@ async def get_course(course_id: str):
     return Course(**course)
 
 # Payment endpoints
-@api_router.post("/payments/create")
-async def create_payment(payment_data: PaymentCreate, user_id: str = Depends(get_current_user)):
+@api_router.post("/payments/create-preference")
+async def create_payment_preference(payment_data: PaymentCreate, user_id: str = Depends(get_current_user)):
+    """Create Mercado Pago payment preference with PIX"""
     # Verify course exists
     course = next((c for c in COURSES_DATA if c['id'] == payment_data.courseId), None)
     if not course:
         raise HTTPException(status_code=404, detail="Curso não encontrado")
     
-    # Generate unique access code
-    access_code = generate_access_code(payment_data.courseId)
+    # Get user info
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
-    # Create payment record
-    payment_id = str(uuid.uuid4())
-    PIX_CODE = "00020126580014BR.GOV.BCB.PIX013606d029d1-4172-4dfe-adb9-fa0022650e925204000053039865802BR5917Jean Mary Jeanlus6009SAO PAULO62140510R4Eevv0mtO6304A256"
-    
-    payment_doc = {
-        "id": payment_id,
-        "userId": user_id,
-        "courseId": payment_data.courseId,
-        "pixCode": PIX_CODE,
-        "receiptData": payment_data.receiptData,
-        "status": "pending",
-        "accessCode": access_code,
-        "createdAt": datetime.now(timezone.utc).isoformat()
+    # Create payment preference
+    preference_data = {
+        "items": [
+            {
+                "title": course['title'],
+                "description": course['description'],
+                "quantity": 1,
+                "unit_price": float(course['price']),
+                "currency_id": "BRL"
+            }
+        ],
+        "payer": {
+            "name": f"{user['firstName']} {user['lastName']}",
+            "email": user['email']
+        },
+        "payment_methods": {
+            "excluded_payment_types": [
+                {"id": "credit_card"},
+                {"id": "debit_card"},
+                {"id": "ticket"}
+            ],
+            "installments": 1
+        },
+        "back_urls": {
+            "success": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-success",
+            "failure": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-failure",
+            "pending": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-pending"
+        },
+        "auto_return": "approved",
+        "external_reference": f"{user_id}_{payment_data.courseId}_{str(uuid.uuid4())[:8]}",
+        "notification_url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')}/api/webhooks/mercadopago"
     }
     
-    await db.payments.insert_one(payment_doc)
-    
-    # Add course to user's purchased courses
-    await db.users.update_one(
-        {"id": user_id},
-        {"$addToSet": {"purchasedCourses": payment_data.courseId}}
-    )
-    
-    return {
-        "success": True,
-        "paymentId": payment_id,
-        "accessCode": access_code,
-        "message": "Comprovante enviado com sucesso! Seu código de acesso foi gerado.",
-        "courseTitle": course['title']
-    }
+    try:
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response["response"]
+        
+        # Save payment record
+        payment_id = str(uuid.uuid4())
+        payment_doc = {
+            "id": payment_id,
+            "userId": user_id,
+            "courseId": payment_data.courseId,
+            "mercadopagoId": preference["id"],
+            "status": "pending",
+            "amount": float(course['price']),
+            "createdAt": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.payments.insert_one(payment_doc)
+        
+        return {
+            "preferenceId": preference["id"],
+            "initPoint": preference["init_point"],
+            "sandboxInitPoint": preference.get("sandbox_init_point"),
+            "qrCode": preference.get("qr_code"),
+            "qrCodeBase64": preference.get("qr_code_base64")
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating Mercado Pago preference: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao criar pagamento: {str(e)}")
+
+@api_router.post("/webhooks/mercadopago")
+async def mercadopago_webhook(request: Request):
+    """Handle Mercado Pago payment notifications"""
+    try:
+        body = await request.json()
+        logger.info(f"Webhook received: {body}")
+        
+        # Get payment info from Mercado Pago
+        if body.get("type") == "payment":
+            payment_id = body["data"]["id"]
+            
+            payment_info = sdk.payment().get(payment_id)
+            payment_data = payment_info["response"]
+            
+            logger.info(f"Payment status: {payment_data['status']}")
+            
+            # If payment is approved, grant access to course
+            if payment_data["status"] == "approved":
+                external_reference = payment_data.get("external_reference", "")
+                parts = external_reference.split("_")
+                
+                if len(parts) >= 2:
+                    user_id = parts[0]
+                    course_id = parts[1]
+                    
+                    # Update payment status
+                    await db.payments.update_one(
+                        {"mercadopagoId": payment_data.get("preference_id", "")},
+                        {"$set": {"status": "approved"}}
+                    )
+                    
+                    # Add course to user's purchased courses
+                    await db.users.update_one(
+                        {"id": user_id},
+                        {"$addToSet": {"purchasedCourses": course_id}}
+                    )
+                    
+                    logger.info(f"Course {course_id} granted to user {user_id}")
+        
+        return {"status": "ok"}
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 @api_router.get("/my-courses")
 async def get_my_courses(user_id: str = Depends(get_current_user)):
@@ -392,26 +476,22 @@ async def get_my_courses(user_id: str = Depends(get_current_user)):
     my_courses = [Course(**c) for c in COURSES_DATA if c['id'] in purchased_course_ids]
     return my_courses
 
-@api_router.get("/my-access-codes")
-async def get_my_access_codes(user_id: str = Depends(get_current_user)):
-    """Get all access codes for user's purchased courses"""
-    payments = await db.payments.find({"userId": user_id}, {"_id": 0}).to_list(1000)
+@api_router.get("/mercadopago/public-key")
+async def get_mercadopago_public_key():
+    """Return Mercado Pago public key for frontend"""
+    return {"publicKey": MERCADOPAGO_PUBLIC_KEY}
+
+@api_router.get("/payments/status/{payment_id}")
+async def check_payment_status(payment_id: str, user_id: str = Depends(get_current_user)):
+    """Check payment status"""
+    payment = await db.payments.find_one({"id": payment_id, "userId": user_id}, {"_id": 0})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pagamento não encontrado")
     
-    # Enrich with course information
-    codes_with_courses = []
-    for payment in payments:
-        course = next((c for c in COURSES_DATA if c['id'] == payment['courseId']), None)
-        if course:
-            codes_with_courses.append({
-                "accessCode": payment.get('accessCode', 'N/A'),
-                "courseId": payment['courseId'],
-                "courseTitle": course['title'],
-                "courseThumbnail": course['thumbnail'],
-                "status": payment['status'],
-                "createdAt": payment['createdAt']
-            })
-    
-    return codes_with_courses
+    return {
+        "status": payment["status"],
+        "courseId": payment["courseId"]
+    }
 
 # Include the router in the main app
 app.include_router(api_router)
