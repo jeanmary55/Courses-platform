@@ -1,15 +1,20 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import bcrypt
+import jwt
+import base64
+import random
+import string
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,52 +24,394 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# JWT Configuration
+JWT_SECRET = os.environ.get('JWT_SECRET', 'shalom-learning-secret-key-2024')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
+
 # Create the main app without a prefix
 app = FastAPI()
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+security = HTTPBearer()
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+# ==================== Models ====================
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class UserSignup(BaseModel):
+    firstName: str
+    lastName: str
+    email: EmailStr
+    password: str
 
-# Add your routes to the router instead of directly to app
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    firstName: str
+    lastName: str
+    email: str
+    purchasedCourses: List[str] = []
+    createdAt: str
+
+class Lesson(BaseModel):
+    id: str
+    title: str
+    videoUrl: str
+    duration: str
+    order: int
+
+class Course(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    title: str
+    category: str
+    description: str
+    price: float
+    lessons: List[Lesson]
+    thumbnail: str
+    language: str
+
+class PaymentCreate(BaseModel):
+    courseId: str
+    receiptData: str  # Base64 encoded receipt
+
+class Payment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    userId: str
+    courseId: str
+    pixCode: str
+    receiptData: str
+    status: str
+    accessCode: str
+    createdAt: str
+
+# ==================== Helper Functions ====================
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_token(user_id: str) -> str:
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def decode_token(token: str) -> str:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload['user_id']
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    token = credentials.credentials
+    return decode_token(token)
+
+def generate_access_code(course_id: str) -> str:
+    """Generate unique access code for a course purchase"""
+    prefix = "SHL"
+    course_code = course_id.upper().replace("-", "")[:6]
+    random_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    return f"{prefix}-{course_code}-{random_code}"
+
+# ==================== Course Data ====================
+
+COURSES_DATA = [
+    {
+        "id": "python-basics",
+        "title": "Python para Iniciantes",
+        "category": "Tecnologia",
+        "description": "Aprenda Python do zero ao avançado com 20 aulas práticas",
+        "price": 197.00,
+        "thumbnail": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"py-lesson-{i}", "title": f"Aula {i}: Fundamentos Python", "videoUrl": "https://www.youtube.com/embed/rfscVS0vtbw", "duration": "15:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "excel-mastery",
+        "title": "Excel Completo",
+        "category": "Tecnologia",
+        "description": "Domine Excel com fórmulas, tabelas dinâmicas e muito mais",
+        "price": 147.00,
+        "thumbnail": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"excel-lesson-{i}", "title": f"Aula {i}: Excel Avançado", "videoUrl": "https://www.youtube.com/embed/RwtRCQ_wbLo", "duration": "18:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "sql-database",
+        "title": "SQL e Bancos de Dados",
+        "category": "Tecnologia",
+        "description": "Aprenda SQL para gerenciar bancos de dados relacionais",
+        "price": 197.00,
+        "thumbnail": "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"sql-lesson-{i}", "title": f"Aula {i}: SQL na Prática", "videoUrl": "https://www.youtube.com/embed/HXV3zeQKqGY", "duration": "20:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "word-professional",
+        "title": "Word Profissional",
+        "category": "Tecnologia",
+        "description": "Crie documentos profissionais com Microsoft Word",
+        "price": 97.00,
+        "thumbnail": "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"word-lesson-{i}", "title": f"Aula {i}: Word Essencial", "videoUrl": "https://www.youtube.com/embed/Z3UeWfvB7Ng", "duration": "12:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "html-css",
+        "title": "HTML & CSS",
+        "category": "Tecnologia",
+        "description": "Crie sites incríveis com HTML5 e CSS3",
+        "price": 197.00,
+        "thumbnail": "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"html-lesson-{i}", "title": f"Aula {i}: Web Development", "videoUrl": "https://www.youtube.com/embed/UB1O30fR-EE", "duration": "25:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "javascript-modern",
+        "title": "JavaScript Moderno",
+        "category": "Tecnologia",
+        "description": "Programação web com JavaScript ES6+",
+        "price": 247.00,
+        "thumbnail": "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"js-lesson-{i}", "title": f"Aula {i}: JavaScript Prático", "videoUrl": "https://www.youtube.com/embed/PkZNo7MFNFg", "duration": "22:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "french-course",
+        "title": "Francês Completo",
+        "category": "Idiomas",
+        "description": "Aprenda francês do básico ao avançado",
+        "price": 297.00,
+        "thumbnail": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"fr-lesson-{i}", "title": f"Aula {i}: Francês para Brasileiros", "videoUrl": "https://www.youtube.com/embed/VmWt3dtvrwE", "duration": "20:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "portuguese-course",
+        "title": "Português Avançado",
+        "category": "Idiomas",
+        "description": "Gramática e redação em português",
+        "price": 197.00,
+        "thumbnail": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"pt-lesson-{i}", "title": f"Aula {i}: Português Profissional", "videoUrl": "https://www.youtube.com/embed/LbTxfN8d2CI", "duration": "18:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "english-course",
+        "title": "Inglês do Zero",
+        "category": "Idiomas",
+        "description": "Inglês para brasileiros - do básico ao fluente",
+        "price": 297.00,
+        "thumbnail": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"en-lesson-{i}", "title": f"Aula {i}: English Made Easy", "videoUrl": "https://www.youtube.com/embed/S_OOI6p6ZFQ", "duration": "20:00", "order": i}
+            for i in range(1, 21)
+        ]
+    },
+    {
+        "id": "spanish-course",
+        "title": "Espanhol Rápido",
+        "category": "Idiomas",
+        "description": "Aprenda espanhol de forma rápida e prática",
+        "price": 247.00,
+        "thumbnail": "https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=800",
+        "language": "pt",
+        "lessons": [
+            {"id": f"es-lesson-{i}", "title": f"Aula {i}: Español Fácil", "videoUrl": "https://www.youtube.com/embed/oI2GEuGZFWk", "duration": "17:00", "order": i}
+            for i in range(1, 21)
+        ]
+    }
+]
+
+# ==================== Routes ====================
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Shalom Learning API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+# Auth endpoints
+@api_router.post("/auth/signup")
+async def signup(user_data: UserSignup):
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    # Create new user
+    user_id = str(uuid.uuid4())
+    user_doc = {
+        "id": user_id,
+        "firstName": user_data.firstName,
+        "lastName": user_data.lastName,
+        "email": user_data.email,
+        "password_hash": hash_password(user_data.password),
+        "purchasedCourses": [],
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
     
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    await db.users.insert_one(user_doc)
+    
+    token = create_token(user_id)
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "firstName": user_data.firstName,
+            "lastName": user_data.lastName,
+            "email": user_data.email,
+            "purchasedCourses": []
+        }
+    }
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.post("/auth/login")
+async def login(credentials: UserLogin):
+    user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
+    if not user or not verify_password(credentials.password, user['password_hash']):
+        raise HTTPException(status_code=401, detail="Email ou senha inválidos")
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    token = create_token(user['id'])
+    return {
+        "token": token,
+        "user": {
+            "id": user['id'],
+            "firstName": user['firstName'],
+            "lastName": user['lastName'],
+            "email": user['email'],
+            "purchasedCourses": user.get('purchasedCourses', [])
+        }
+    }
+
+@api_router.get("/auth/me")
+async def get_me(user_id: str = Depends(get_current_user)):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return user
+
+# Course endpoints
+@api_router.get("/courses", response_model=List[Course])
+async def get_courses(category: Optional[str] = None):
+    if category:
+        return [Course(**course) for course in COURSES_DATA if course['category'] == category]
+    return [Course(**course) for course in COURSES_DATA]
+
+@api_router.get("/courses/{course_id}", response_model=Course)
+async def get_course(course_id: str):
+    course = next((c for c in COURSES_DATA if c['id'] == course_id), None)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    return Course(**course)
+
+# Payment endpoints
+@api_router.post("/payments/create")
+async def create_payment(payment_data: PaymentCreate, user_id: str = Depends(get_current_user)):
+    # Verify course exists
+    course = next((c for c in COURSES_DATA if c['id'] == payment_data.courseId), None)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
     
-    return status_checks
+    # Generate unique access code
+    access_code = generate_access_code(payment_data.courseId)
+    
+    # Create payment record
+    payment_id = str(uuid.uuid4())
+    PIX_CODE = "00020126580014BR.GOV.BCB.PIX013606d029d1-4172-4dfe-adb9-fa0022650e925204000053039865802BR5917Jean Mary Jeanlus6009SAO PAULO62140510R4Eevv0mtO6304A256"
+    
+    payment_doc = {
+        "id": payment_id,
+        "userId": user_id,
+        "courseId": payment_data.courseId,
+        "pixCode": PIX_CODE,
+        "receiptData": payment_data.receiptData,
+        "status": "pending",
+        "accessCode": access_code,
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.payments.insert_one(payment_doc)
+    
+    # Add course to user's purchased courses
+    await db.users.update_one(
+        {"id": user_id},
+        {"$addToSet": {"purchasedCourses": payment_data.courseId}}
+    )
+    
+    return {
+        "success": True,
+        "paymentId": payment_id,
+        "accessCode": access_code,
+        "message": "Comprovante enviado com sucesso! Seu código de acesso foi gerado.",
+        "courseTitle": course['title']
+    }
+
+@api_router.get("/my-courses")
+async def get_my_courses(user_id: str = Depends(get_current_user)):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    purchased_course_ids = user.get('purchasedCourses', [])
+    my_courses = [Course(**c) for c in COURSES_DATA if c['id'] in purchased_course_ids]
+    return my_courses
+
+@api_router.get("/my-access-codes")
+async def get_my_access_codes(user_id: str = Depends(get_current_user)):
+    """Get all access codes for user's purchased courses"""
+    payments = await db.payments.find({"userId": user_id}, {"_id": 0}).to_list(1000)
+    
+    # Enrich with course information
+    codes_with_courses = []
+    for payment in payments:
+        course = next((c for c in COURSES_DATA if c['id'] == payment['courseId']), None)
+        if course:
+            codes_with_courses.append({
+                "accessCode": payment.get('accessCode', 'N/A'),
+                "courseId": payment['courseId'],
+                "courseTitle": course['title'],
+                "courseThumbnail": course['thumbnail'],
+                "status": payment['status'],
+                "createdAt": payment['createdAt']
+            })
+    
+    return codes_with_courses
 
 # Include the router in the main app
 app.include_router(api_router)
