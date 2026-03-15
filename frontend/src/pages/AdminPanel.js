@@ -169,8 +169,9 @@ export default function AdminPanel() {
                     <tr>
                       <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Nome</th>
                       <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Email</th>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Cursos Comprados</th>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Data de Cadastro</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Senha (Hash)</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Cursos</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Cadastro</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -180,6 +181,11 @@ export default function AdminPanel() {
                           <div className="font-medium text-slate-900">{user.firstName} {user.lastName}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                        <td className="px-6 py-4">
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700">
+                            {user.password_hash ? user.password_hash.substring(0, 20) + '...' : 'N/A'}
+                          </code>
+                        </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-violet-100 text-violet-800">
                             {user.purchasedCourses?.length || 0} cursos
