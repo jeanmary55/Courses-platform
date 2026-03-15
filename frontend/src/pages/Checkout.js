@@ -59,11 +59,14 @@ export default function Checkout() {
         }
       );
 
+      console.log('Payment created:', response.data);
       setPreferenceId(response.data.preferenceId);
       toast.success('Pagamento criado! Clique no botão azul abaixo para pagar.');
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error(error.response?.data?.detail || t('error'));
+      console.error('Error response:', error.response?.data);
+      const errorMessage = error.response?.data?.detail || error.message || 'Erro ao criar pagamento';
+      toast.error(`Erro: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

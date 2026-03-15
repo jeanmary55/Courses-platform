@@ -394,6 +394,9 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
         preference_response = sdk.preference().create(preference_data)
         preference = preference_response["response"]
         
+        # Log success
+        logger.info(f"Preference created successfully: {preference['id']}")
+        
         # Save payment record
         payment_id = str(uuid.uuid4())
         payment_doc = {
@@ -414,8 +417,19 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
         }
         
     except Exception as e:
-        logger.error(f"Error creating Mercado Pago preference: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Erro ao criar pagamento: {str(e)}")
+        error_detail = str(e)
+        logger.error(f"Error creating Mercado Pago preference: {error_detail}")
+        
+        # Check if it's an API error
+        if hasattr(e, 'args') and len(e.args) > 0:
+            error_info = e.args[0]
+            logger.error(f"Detailed error: {error_info}")
+        
+        # Return user-friendly error
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erro ao criar pagamento. Verifique suas credenciais do Mercado Pago. Detalhes: {error_detail}"
+        )
 
 @api_router.post("/webhooks/mercadopago")
 async def mercadopago_webhook(request: Request):
@@ -476,6 +490,27 @@ async def get_my_courses(user_id: str = Depends(get_current_user)):
 async def get_mercadopago_public_key():
     """Return Mercado Pago public key for frontend"""
     return {"publicKey": MERCADOPAGO_PUBLIC_KEY}
+
+@api_router.get("/mercadopago/test-credentials")
+async def test_mercadopago_credentials():
+    """Test Mercado Pago credentials"""
+    try:
+        # Try to get payment methods to test credentials
+        payment_methods = sdk.payment_methods().list_all()
+        return {
+            "status": "success",
+            "message": "Credenciais válidas",
+            "hasAccessToken": bool(MERCADOPAGO_ACCESS_TOKEN),
+            "hasPublicKey": bool(MERCADOPAGO_PUBLIC_KEY),
+            "tokenLength": len(MERCADOPAGO_ACCESS_TOKEN) if MERCADOPAGO_ACCESS_TOKEN else 0
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Erro ao testar credenciais: {str(e)}",
+            "hasAccessToken": bool(MERCADOPAGO_ACCESS_TOKEN),
+            "hasPublicKey": bool(MERCADOPAGO_PUBLIC_KEY)
+        }
 
 @api_router.get("/payments/status/{payment_id}")
 async def check_payment_status(payment_id: str, user_id: str = Depends(get_current_user)):
