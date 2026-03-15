@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Users, DollarSign, ShoppingCart, Clock, Search } from 'lucide-react';
+import { Users, DollarSign, ShoppingCart, Clock, Search, LogOut } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -14,17 +15,29 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if admin is logged in
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      navigate('/admin-login');
+      return;
+    }
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
+      const adminToken = localStorage.getItem('adminToken');
+      const headers = {
+        Authorization: `Bearer ${adminToken}`
+      };
+
       const [statsRes, usersRes, paymentsRes] = await Promise.all([
-        axios.get(`${API}/admin/stats`),
-        axios.get(`${API}/admin/users`),
-        axios.get(`${API}/admin/payments`)
+        axios.get(`${API}/admin/stats`, { headers }),
+        axios.get(`${API}/admin/users`, { headers }),
+        axios.get(`${API}/admin/payments`, { headers })
       ]);
 
       setStats(statsRes.data);
@@ -32,9 +45,20 @@ export default function AdminPanel() {
       setPayments(paymentsRes.data);
     } catch (error) {
       console.error('Error fetching admin data:', error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminEmail');
+        navigate('/admin-login');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminEmail');
+    navigate('/admin-login');
   };
 
   const filteredUsers = users.filter(user => 
@@ -62,9 +86,19 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="container mx-auto px-6 md:px-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Painel Administrativo</h1>
-          <p className="text-slate-600">Gerenciamento do Shalom Learning</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">Painel Administrativo</h1>
+            <p className="text-slate-600">Gerenciamento do Shalom Learning</p>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </Button>
         </div>
 
         {/* Tabs */}

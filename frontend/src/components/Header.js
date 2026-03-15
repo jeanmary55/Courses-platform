@@ -55,7 +55,7 @@ export const Header = () => {
             >
               {t('about')}
             </a>
-            <Link to="/admin" className="text-slate-700 hover:text-violet-600 transition-colors" data-testid="nav-admin">
+            <Link to="/admin-login" className="text-slate-700 hover:text-violet-600 transition-colors" data-testid="nav-admin">
               Admin
             </Link>
           </nav>

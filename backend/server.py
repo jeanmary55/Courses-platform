@@ -373,6 +373,11 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
             "name": f"{user['firstName']} {user['lastName']}",
             "email": user['email']
         },
+        "payment_methods": {
+            "excluded_payment_methods": [],
+            "excluded_payment_types": [],
+            "installments": 12
+        },
         "back_urls": {
             "success": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-success",
             "failure": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-failure",
@@ -381,7 +386,8 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
         "auto_return": "approved",
         "external_reference": f"{user_id}_{payment_data.courseId}_{str(uuid.uuid4())[:8]}",
         "notification_url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')}/api/webhooks/mercadopago",
-        "statement_descriptor": "Shalom Learning"
+        "statement_descriptor": "Shalom Learning",
+        "binary_mode": False
     }
     
     try:
@@ -484,14 +490,45 @@ async def check_payment_status(payment_id: str, user_id: str = Depends(get_curre
     }
 
 # Admin endpoints
+ADMIN_EMAIL = "jeanlusjeanmarysagehomme@gmail.com"
+ADMIN_PASSWORD_HASH = hash_password("Bondye509@")
+
+class AdminLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+@api_router.post("/admin/login")
+async def admin_login(credentials: AdminLogin):
+    """Admin login"""
+    if credentials.email != ADMIN_EMAIL:
+        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    
+    if not verify_password(credentials.password, ADMIN_PASSWORD_HASH):
+        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    
+    # Create admin token
+    token = create_token("admin_user")
+    return {
+        "token": token,
+        "email": ADMIN_EMAIL
+    }
+
+async def verify_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """Verify admin token"""
+    token = credentials.credentials
+    user_id = decode_token(token)
+    if user_id != "admin_user":
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return user_id
+
 @api_router.get("/admin/users")
-async def get_all_users():
+async def get_all_users(admin: str = Depends(verify_admin)):
     """Get all registered users with password hash (admin only)"""
     users = await db.users.find({}, {"_id": 0}).to_list(1000)
     return users
 
 @api_router.get("/admin/payments")
-async def get_all_payments():
+async def get_all_payments(admin: str = Depends(verify_admin)):
     """Get all payments (admin only)"""
     payments = await db.payments.find({}, {"_id": 0}).to_list(1000)
     
@@ -514,7 +551,7 @@ async def get_all_payments():
     return enriched_payments
 
 @api_router.get("/admin/stats")
-async def get_admin_stats():
+async def get_admin_stats(admin: str = Depends(verify_admin)):
     """Get dashboard statistics (admin only)"""
     total_users = await db.users.count_documents({})
     total_payments = await db.payments.count_documents({})
