@@ -345,9 +345,9 @@ async def get_course(course_id: str):
     return Course(**course)
 
 # Payment endpoints
-@api_router.post("/payments/create-preference")
-async def create_payment_preference(payment_data: PaymentCreate, user_id: str = Depends(get_current_user)):
-    """Create Mercado Pago payment preference with PIX"""
+@api_router.post("/payments/create-pix")
+async def create_pix_payment(payment_data: PaymentCreate, user_id: str = Depends(get_current_user)):
+    """Create PIX payment directly without redirect"""
     # Verify course exists
     course = next((c for c in COURSES_DATA if c['id'] == payment_data.courseId), None)
     if not course:
@@ -358,42 +358,23 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
-    # Create payment preference
-    preference_data = {
-        "items": [
-            {
-                "title": course['title'],
-                "description": course['description'],
-                "quantity": 1,
-                "unit_price": float(course['price']),
-                "currency_id": "BRL"
-            }
-        ],
-        "payer": {
-            "name": f"{user['firstName']} {user['lastName']}",
-            "email": user['email']
-        },
-        "payment_methods": {
-            "excluded_payment_types": [
-                {"id": "credit_card"},
-                {"id": "debit_card"},
-                {"id": "ticket"}
-            ],
-            "installments": 1
-        },
-        "back_urls": {
-            "success": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-success",
-            "failure": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-failure",
-            "pending": f"{os.environ.get('FRONTEND_URL', 'http://localhost:3000')}/payment-pending"
-        },
-        "auto_return": "approved",
-        "external_reference": f"{user_id}_{payment_data.courseId}_{str(uuid.uuid4())[:8]}",
-        "notification_url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')}/api/webhooks/mercadopago"
-    }
-    
     try:
-        preference_response = sdk.preference().create(preference_data)
-        preference = preference_response["response"]
+        # Create payment with Mercado Pago
+        payment_data_mp = {
+            "transaction_amount": float(course['price']),
+            "description": course['title'],
+            "payment_method_id": "pix",
+            "payer": {
+                "email": user['email'],
+                "first_name": user['firstName'],
+                "last_name": user['lastName']
+            },
+            "external_reference": f"{user_id}_{payment_data.courseId}_{str(uuid.uuid4())[:8]}",
+            "notification_url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')}/api/webhooks/mercadopago"
+        }
+        
+        payment_response = sdk.payment().create(payment_data_mp)
+        payment = payment_response["response"]
         
         # Save payment record
         payment_id = str(uuid.uuid4())
@@ -401,24 +382,27 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
             "id": payment_id,
             "userId": user_id,
             "courseId": payment_data.courseId,
-            "mercadopagoId": preference["id"],
-            "status": "pending",
+            "mercadopagoId": str(payment["id"]),
+            "status": payment["status"],
             "amount": float(course['price']),
             "createdAt": datetime.now(timezone.utc).isoformat()
         }
         
         await db.payments.insert_one(payment_doc)
         
+        # Return PIX information
         return {
-            "preferenceId": preference["id"],
-            "initPoint": preference["init_point"],
-            "sandboxInitPoint": preference.get("sandbox_init_point"),
-            "qrCode": preference.get("qr_code"),
-            "qrCodeBase64": preference.get("qr_code_base64")
+            "paymentId": payment_id,
+            "mercadopagoPaymentId": payment["id"],
+            "status": payment["status"],
+            "qrCode": payment["point_of_interaction"]["transaction_data"]["qr_code"],
+            "qrCodeBase64": payment["point_of_interaction"]["transaction_data"]["qr_code_base64"],
+            "ticketUrl": payment["point_of_interaction"]["transaction_data"].get("ticket_url"),
+            "expirationDate": payment.get("date_of_expiration")
         }
         
     except Exception as e:
-        logger.error(f"Error creating Mercado Pago preference: {str(e)}")
+        logger.error(f"Error creating PIX payment: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao criar pagamento: {str(e)}")
 
 @api_router.post("/webhooks/mercadopago")
@@ -491,6 +475,56 @@ async def check_payment_status(payment_id: str, user_id: str = Depends(get_curre
     return {
         "status": payment["status"],
         "courseId": payment["courseId"]
+    }
+
+# Admin endpoints
+@api_router.get("/admin/users")
+async def get_all_users():
+    """Get all registered users (admin only)"""
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return users
+
+@api_router.get("/admin/payments")
+async def get_all_payments():
+    """Get all payments (admin only)"""
+    payments = await db.payments.find({}, {"_id": 0}).to_list(1000)
+    
+    # Enrich with user and course info
+    enriched_payments = []
+    for payment in payments:
+        user = await db.users.find_one({"id": payment["userId"]}, {"_id": 0, "password_hash": 0})
+        course = next((c for c in COURSES_DATA if c['id'] == payment["courseId"]), None)
+        
+        enriched_payments.append({
+            **payment,
+            "user": user,
+            "course": {
+                "id": course["id"],
+                "title": course["title"],
+                "price": course["price"]
+            } if course else None
+        })
+    
+    return enriched_payments
+
+@api_router.get("/admin/stats")
+async def get_admin_stats():
+    """Get dashboard statistics (admin only)"""
+    total_users = await db.users.count_documents({})
+    total_payments = await db.payments.count_documents({})
+    approved_payments = await db.payments.count_documents({"status": "approved"})
+    pending_payments = await db.payments.count_documents({"status": {"$in": ["pending", "in_process"]}})
+    
+    # Calculate total revenue
+    payments = await db.payments.find({"status": "approved"}, {"_id": 0, "amount": 1}).to_list(1000)
+    total_revenue = sum(p.get("amount", 0) for p in payments)
+    
+    return {
+        "totalUsers": total_users,
+        "totalPayments": total_payments,
+        "approvedPayments": approved_payments,
+        "pendingPayments": pending_payments,
+        "totalRevenue": total_revenue
     }
 
 # Include the router in the main app

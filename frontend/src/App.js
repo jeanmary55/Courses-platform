@@ -13,6 +13,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentPending from './pages/PaymentPending';
 import PaymentFailure from './pages/PaymentFailure';
 import MyCourses from './pages/MyCourses';
+import AdminPanel from './pages/AdminPanel';
 import '@/App.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
               <Route path="/payment-pending" element={<PaymentPending />} />
               <Route path="/payment-failure" element={<PaymentFailure />} />
               <Route path="/my-courses" element={<MyCourses />} />
+              <Route path="/admin" element={<AdminPanel />} />
             </Routes>
             <Toaster position="top-center" richColors />
           </div>
