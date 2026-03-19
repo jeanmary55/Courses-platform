@@ -1,0 +1,196 @@
+<analysis>**original_problem_statement:**
+Create a website named Shalom Learning to sell technology and language courses (Python, Excel, SQL, Word, HTML/CSS, Javascript, French, Portuguese, English, Spanish). The default language must be Brazilian Portuguese. The site should include an FAQ section. The user flow for purchasing is: click Buy Now, which prompts for login/registration (first name, last name, email, password), and then proceeds to payment. The user specified a PIX key for payment and contact information. The site must have a language translation feature (English, French, Haitian Creole, Spanish, Portuguese). Each course should have 20 placeholder video lessons. A documentation file explaining modifications is also required. An external link for more course information was provided.
+
+Later requests evolved the payment system to use Mercado Pago for real transactions, removed manual PIX proof uploads, and added a request for an admin panel to manage users and course content.
+
+**PRODUCT REQUIREMENTS:**
+- **E-commerce Platform**: Sell technology and language courses.
+- **Localization**: Default to Brazilian Portuguese with translation options for English, French, Haitian Creole, and Spanish.
+- **Authentication**: JWT-based user registration and login.
+- **Payment Integration**: Real payments via Mercado Pago, supporting PIX, credit/debit cards, and boleto.
+- **Course Structure**: Each course contains multiple lessons (video + PDF).
+- **Admin Panel**:
+    - Secure login for the admin.
+    - View registered users and their purchase history.
+    - Manage course content: Add/delete lessons (YouTube videos and PDF files) for each course.
+- **User Dashboard**: A My Courses page where users can view their purchased courses and access the lessons.
+
+**User's preferred language**: Brasilian portuguese
+
+**what currently exists?**
+A full-stack application using React, FastAPI, and MongoDB has been developed. The Shalom Learning website features a course catalog, user authentication (signup/login), and multi-language support using i18n for both static UI text and dynamic course data (titles/descriptions). The application is integrated with Mercado Pago using the user's **production keys**, enabling real-time, verified payments. An admin panel is available at , protected by a dedicated login, which currently allows viewing of registered users. The backend infrastructure for adding and managing course lessons via YouTube links has been created.
+
+**Last working item**:
+- **Last item agent was working**: The agent was implementing the user's request to add and manage course lessons directly from the admin panel. This involved adding backend models and API endpoints for lessons and then starting the implementation of the frontend interface in . The agent successfully added the backend logic and was in the process of building the UI, having added the state management and JSX structure for a Gerenciar Aulas (Manage Lessons) tab.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both
+- **User Testing Done**: N
+
+**All Pending/In progress Issue list**:
+-   **Issue 1**: Complete Admin Lesson Management UI (Priority: P0)
+-   **Issue 2**: Implement PDF Upload for Lessons (Priority: P1)
+-   **Issue 3**: Display Course Lessons to Students (Priority: P2)
+
+**Issues Detail**:
+-   **Issue 1**:
+    -   **Attempted fixes**: The agent started building the UI in  by adding state, API functions (, , ), and the JSX for the management tab. The work is incomplete.
+    -   **Next debug checklist**:
+        1.  Open .
+        2.  Verify the form for adding a new lesson (title, YouTube URL) is complete and functional.
+        3.  Implement the UI to list existing lessons for a selected course.
+        4.  Ensure the delete button for each lesson is wired correctly to the  function.
+        5.  Test the UI to ensure the lesson list updates dynamically upon adding or deleting a lesson.
+    -   **Why fix this issue and what will be achieved with the fix?**: This will complete the core feature requested by the user, allowing them to manage course content dynamically through the admin panel.
+    -   **Status**: IN PROGRESS
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on other issue**: None
+
+-   **Issue 2**:
+    -   **Attempted fixes**: None. This part of the user's request was deferred.
+    -   **Next debug checklist**:
+        1.  **Backend**: Modify the  model in  to include a  field.
+        2.  **Backend**: Create a new API endpoint to handle file uploads. This endpoint should save the PDF to a designated server directory (e.g., ) and return the file path.
+        3.  **Backend**: Update the  endpoint to accept the  when creating a lesson.
+        4.  **Frontend**: In , add a file input field to the Add Lesson form.
+        5.  **Frontend**: Implement the client-side logic to upload the selected PDF to the new file upload endpoint and pass the returned URL to the  function.
+    -   **Why fix this issue and what will be achieved with the fix?**: To fulfill the user's complete requirement for lesson content, which includes both a video and a supplementary PDF document.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on other issue**: None
+
+-   **Issue 3**:
+    -   **Attempted fixes**: None. The backend returns lesson data, but the frontend has not been updated to consume it.
+    -   **Next debug checklist**:
+        1.  **Frontend**: Modify the  and/or  pages.
+        2.  **Frontend**: When a user who owns a course views its detail page, fetch the course data, which now includes a list of lessons.
+        3.  **Frontend**: Render the list of lessons, displaying the lesson title, an embedded YouTube player for the , and a download link for the .
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical user-facing feature. It allows students to access the course content they have purchased.
+    -   **Status**: NOT STARTED
+    -   **Is recurring issue?**: N
+    -   **Should Test frontend/backend/both after fix?**: Frontend
+    -   **Blocked on other issue**: Issue 1 (Admin Lesson Management UI)
+
+**In progress Task List**:
+-   **Task 1**: Complete Admin Panel UI for Lesson Management (Priority: P0)
+    -   **Where to resume**: Continue editing  to finish building the React components for adding and listing lessons within the Gerenciar Aulas tab.
+    -   **What will be achieved with this?**: The admin will have a functional interface to manage course lessons (YouTube links) as requested.
+    -   **Status**: IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?**: both
+    -   **Blocked on something**: None
+
+**Upcoming and Future Tasks**
+**Upcoming Tasks**:
+-   **(P1) Implement PDF Upload for Lessons**: Add functionality for the admin to upload a PDF file associated with each lesson.
+-   **(P2) Display Lessons on Frontend**: Show the list of lessons (video and PDF) on the course detail page for students who have purchased the course.
+
+**Future Tasks**:
+-   Implement email notifications for purchase confirmations.
+-   Add a student progress tracking system.
+-   Generate digital certificates upon course completion.
+-   Enhance the admin panel with filtering, searching, and reporting (CSV/PDF export) features.
+-   Implement a Reset Password function for users.
+
+**Completed work in this session**
+- **Recently completed**:
+    - Full-stack MVP for Shalom Learning created.
+    - User authentication (Signup/Login with JWT) implemented.
+    - Multi-language support (i18n) for EN, FR, ES, PT, HT implemented for both UI and course data.
+    - Successfully integrated **Mercado Pago** with **production credentials** for real payments (PIX, Card, Boleto).
+    - Fixed Mercado Pago error  by updating from test to production keys.
+    - Created a secure **Admin Panel** at  with a dedicated login ().
+    - Implemented backend infrastructure for managing course lessons (add/delete/list).
+    - Added complete translations for dynamic course titles and descriptions.
+
+**Earlier issues found/mentioned but not fixed**
+-   None.
+
+**Known issue recurrence from previous fork**
+-   N/A
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+-   **Backend**: FastAPI, MongoDB (using ), Pydantic, JWT Authentication.
+-   **Frontend**: React, React Router, Axios, Tailwind CSS, .
+-   **Payments**: Mercado Pago SDK for payment processing.
+-   **Architecture**: A full-stack application with a React frontend and a Python backend in a single repository.
+
+**key DB schema**
+-   **users**: 
+-   **payments**: 
+-   **lessons**: 
+
+**changes in tech stack**
+-  SDK was added to the backend.
+-  was added to the frontend.
+-  and related internationalization packages were added to the frontend.
+
+**All files of reference**
+-   : Contains all backend logic, including auth, payments, admin functions, and the new lesson management endpoints.
+-   : The file currently being worked on. Contains the UI for the admin dashboard, including the in-progress lesson management feature.
+-   : Implements the Mercado Pago payment flow.
+-   : Contains all translation strings for the site.
+-   : A custom hook for applying translations to course data.
+-   : Documentation created for the user.
+
+**Areas that need refactoring**:
+-   The  file is growing large and contains all API logic. It could be beneficial to split the routes into separate modules (e.g., , , ) for better maintainability.
+-   The course list is currently hardcoded in . Migrating this to a dedicated  collection in MongoDB would make the platform more dynamic and manageable through the admin panel.
+
+**key api endpoints**
+-   **Auth**: , 
+-   **Admin Auth**: 
+-   **Courses**: , 
+-   **Payments**: , 
+-   **Admin**: , 
+-   **Lesson Management (Admin)**: , 
+-   **User**: 
+
+**Critical Info for New Agent**
+-   The project is using **PRODUCTION** credentials for Mercado Pago. The payment system is live and can process real financial transactions.
+-   The current, correct payment flow is **Mercado Pago Wallet**, which redirects users to the Mercado Pago website. A previously attempted Checkout Transparente (on-site PIX) has been reverted.
+-   The admin panel is accessible at  and requires login via . Credentials are in the message history: , .
+-   Your immediate task is to complete the lesson management feature in the admin panel, focusing first on the UI for YouTube links, and then addressing the PDF upload requirement.
+
+**documents and test reports created in this job**
+-   /app/DOCUMENTACAO.md
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **Request**: Add functionality to the admin panel for uploading course lessons (title, MP4 video, PDF) and fix incomplete course translations. (In progress)
+2.  **Clarification**: User agreed to use YouTube links for videos. (Acknowledged)
+3.  **Reminder**: The lesson management UI must be inside the admin panel. (Acknowledged)
+4.  **Agent Summary**: Agent provided a summary of translation implementation.
+5.  **User Request**: Reported a payment error. (Resolved)
+6.  **User Info**: Provided the Mercado Pago error code . (Resolved)
+7.  **User Info**: Provided **PRODUCTION** Mercado Pago credentials to fix the error. (Implemented)
+8.  **Agent Summary**: Agent confirmed the fix with production keys.
+9.  **User Request (Repeat)**: Reiterated the need for lesson management in the admin panel and fixing translations. (In progress)
+10. **User Clarification (Repeat)**: Confirmed YouTube is okay for videos. (Acknowledged)
+11. **User Reminder (Repeat)**: Stressed that the lesson management UI should be in the admin panel. (Acknowledged)
+
+**Project Health Check:**
+-   **Broken**: The admin lesson management feature is incomplete as the frontend UI is not fully implemented. Students cannot view the lessons they purchase yet.
+-   **Mocked**: N/A
+
+**3rd Party Integrations**
+-   **Mercado Pago**: Used for processing all payments (PIX, Credit/Debit Card, Boleto). It is configured with user-provided **production** API keys.
+
+**Testing status**
+-   **Testing agent used after significant changes**: YES (early in the project)
+-   **Troubleshoot agent used after agent stuck in loop**: NO
+-   **Test files created**: []
+-   **Known regressions**: None
+
+**Credentials to test flow:**
+-   **Admin Login**:
+    -   **Email**: 
+    -   **Password**: 
+-   **User Login**: A new user can be created via the signup form on the website.
+
+**What agent forgot to execute**
+-   The agent has not started implementing the **PDF upload** functionality for lessons, which was part of the user's original request for the feature.
+-   The agent has not created the frontend UI for **students to view lessons** after purchasing a course. While the backend provides the data, the  or  pages have not been updated to display it.</analysis>

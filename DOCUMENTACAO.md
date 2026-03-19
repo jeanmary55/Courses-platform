@@ -483,7 +483,7 @@ mongodb    RUNNING
 ### 2. **Testar API**
 
 ```bash
-curl https://aprender-tech.preview.emergentagent.com/api/courses
+curl https://course-hub-164.preview.emergentagent.com/api/courses
 ```
 
 ### 3. **Ver Logs em Caso de Erro**

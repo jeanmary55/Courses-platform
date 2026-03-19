@@ -20,6 +20,13 @@ import mercadopago
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# Configure logging early
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -132,7 +139,8 @@ def generate_access_code(course_id: str) -> str:
 
 # ==================== Course Data ====================
 
-COURSES_DATA = [
+# Default courses to seed database if empty
+DEFAULT_COURSES = [
     {
         "id": "python-basics",
         "title": "Python para Iniciantes",
@@ -141,10 +149,8 @@ COURSES_DATA = [
         "price": 197.00,
         "thumbnail": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"py-lesson-{i}", "title": f"Aula {i}: Fundamentos Python", "videoUrl": "https://www.youtube.com/embed/rfscVS0vtbw", "duration": "15:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "excel-mastery",
@@ -154,10 +160,8 @@ COURSES_DATA = [
         "price": 147.00,
         "thumbnail": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"excel-lesson-{i}", "title": f"Aula {i}: Excel Avançado", "videoUrl": "https://www.youtube.com/embed/RwtRCQ_wbLo", "duration": "18:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "sql-database",
@@ -167,10 +171,8 @@ COURSES_DATA = [
         "price": 197.00,
         "thumbnail": "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"sql-lesson-{i}", "title": f"Aula {i}: SQL na Prática", "videoUrl": "https://www.youtube.com/embed/HXV3zeQKqGY", "duration": "20:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "word-professional",
@@ -180,10 +182,8 @@ COURSES_DATA = [
         "price": 97.00,
         "thumbnail": "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"word-lesson-{i}", "title": f"Aula {i}: Word Essencial", "videoUrl": "https://www.youtube.com/embed/Z3UeWfvB7Ng", "duration": "12:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "html-css",
@@ -193,10 +193,8 @@ COURSES_DATA = [
         "price": 197.00,
         "thumbnail": "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"html-lesson-{i}", "title": f"Aula {i}: Web Development", "videoUrl": "https://www.youtube.com/embed/UB1O30fR-EE", "duration": "25:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "javascript-modern",
@@ -206,10 +204,8 @@ COURSES_DATA = [
         "price": 247.00,
         "thumbnail": "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"js-lesson-{i}", "title": f"Aula {i}: JavaScript Prático", "videoUrl": "https://www.youtube.com/embed/PkZNo7MFNFg", "duration": "22:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "french-course",
@@ -219,10 +215,8 @@ COURSES_DATA = [
         "price": 297.00,
         "thumbnail": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"fr-lesson-{i}", "title": f"Aula {i}: Francês para Brasileiros", "videoUrl": "https://www.youtube.com/embed/VmWt3dtvrwE", "duration": "20:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "portuguese-course",
@@ -232,10 +226,8 @@ COURSES_DATA = [
         "price": 197.00,
         "thumbnail": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"pt-lesson-{i}", "title": f"Aula {i}: Português Profissional", "videoUrl": "https://www.youtube.com/embed/LbTxfN8d2CI", "duration": "18:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "english-course",
@@ -245,10 +237,8 @@ COURSES_DATA = [
         "price": 297.00,
         "thumbnail": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"en-lesson-{i}", "title": f"Aula {i}: English Made Easy", "videoUrl": "https://www.youtube.com/embed/S_OOI6p6ZFQ", "duration": "20:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     },
     {
         "id": "spanish-course",
@@ -258,12 +248,29 @@ COURSES_DATA = [
         "price": 247.00,
         "thumbnail": "https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=800",
         "language": "pt",
-        "lessons": [
-            {"id": f"es-lesson-{i}", "title": f"Aula {i}: Español Fácil", "videoUrl": "https://www.youtube.com/embed/oI2GEuGZFWk", "duration": "17:00", "order": i}
-            for i in range(1, 21)
-        ]
+        "published": True,
+        "lessons": []
     }
 ]
+
+async def seed_courses():
+    """Seed default courses to database if empty"""
+    count = await db.courses.count_documents({})
+    if count == 0:
+        for course in DEFAULT_COURSES:
+            course["createdAt"] = datetime.now(timezone.utc).isoformat()
+            await db.courses.insert_one(course)
+        logger.info(f"Seeded {len(DEFAULT_COURSES)} default courses")
+
+async def get_courses_from_db():
+    """Get all courses from database"""
+    courses = await db.courses.find({}, {"_id": 0}).to_list(1000)
+    return courses
+
+async def get_course_by_id(course_id: str):
+    """Get a single course by ID"""
+    course = await db.courses.find_one({"id": course_id}, {"_id": 0})
+    return course
 
 # ==================== Routes ====================
 
@@ -331,25 +338,45 @@ async def get_me(user_id: str = Depends(get_current_user)):
     return user
 
 # Course endpoints
-@api_router.get("/courses", response_model=List[Course])
-async def get_courses(category: Optional[str] = None):
+@api_router.get("/courses")
+async def get_courses(category: Optional[str] = None, include_unpublished: bool = False):
+    """Get all courses - only published courses for regular users"""
+    await seed_courses()  # Ensure courses are seeded
+    
+    query = {}
     if category:
-        return [Course(**course) for course in COURSES_DATA if course['category'] == category]
-    return [Course(**course) for course in COURSES_DATA]
+        query["category"] = category
+    if not include_unpublished:
+        query["published"] = True
+    
+    courses = await db.courses.find(query, {"_id": 0}).to_list(1000)
+    
+    # Add lessons for each course
+    for course in courses:
+        lessons = await db.lessons.find({"courseId": course["id"]}, {"_id": 0}).sort("order", 1).to_list(1000)
+        course["lessons"] = lessons
+    
+    return courses
 
-@api_router.get("/courses/{course_id}", response_model=Course)
+@api_router.get("/courses/{course_id}")
 async def get_course(course_id: str):
-    course = next((c for c in COURSES_DATA if c['id'] == course_id), None)
+    """Get a single course by ID"""
+    course = await get_course_by_id(course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Curso não encontrado")
-    return Course(**course)
+    
+    # Add lessons
+    lessons = await db.lessons.find({"courseId": course_id}, {"_id": 0}).sort("order", 1).to_list(1000)
+    course["lessons"] = lessons
+    
+    return course
 
 # Payment endpoints
 @api_router.post("/payments/create-preference")
 async def create_payment_preference(payment_data: PaymentCreate, user_id: str = Depends(get_current_user)):
     """Create Mercado Pago payment preference - All payment methods, no account required"""
     # Verify course exists
-    course = next((c for c in COURSES_DATA if c['id'] == payment_data.courseId), None)
+    course = await get_course_by_id(payment_data.courseId)
     if not course:
         raise HTTPException(status_code=404, detail="Curso não encontrado")
     
@@ -483,8 +510,16 @@ async def get_my_courses(user_id: str = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
     purchased_course_ids = user.get('purchasedCourses', [])
-    my_courses = [Course(**c) for c in COURSES_DATA if c['id'] in purchased_course_ids]
-    return my_courses
+    
+    # Get courses from database
+    courses = await db.courses.find({"id": {"$in": purchased_course_ids}}, {"_id": 0}).to_list(1000)
+    
+    # Add lessons for each course
+    for course in courses:
+        lessons = await db.lessons.find({"courseId": course["id"]}, {"_id": 0}).sort("order", 1).to_list(1000)
+        course["lessons"] = lessons
+    
+    return courses
 
 @api_router.get("/mercadopago/public-key")
 async def get_mercadopago_public_key():
@@ -496,7 +531,7 @@ async def test_mercadopago_credentials():
     """Test Mercado Pago credentials"""
     try:
         # Try to get payment methods to test credentials
-        payment_methods = sdk.payment_methods().list_all()
+        sdk.payment_methods().list_all()
         return {
             "status": "success",
             "message": "Credenciais válidas",
@@ -535,10 +570,10 @@ class AdminLogin(BaseModel):
 class LessonUpload(BaseModel):
     courseId: str
     title: str
-    videoFile: str  # Base64 encoded video or URL
-    pdfFile: Optional[str] = None  # Base64 encoded PDF
+    videoUrl: str  # YouTube URL
+    pdfUrl: Optional[str] = None  # PDF URL (Google Drive, Dropbox, etc)
     order: int
-    duration: str
+    duration: str = "15:00"
 
 @api_router.post("/admin/login")
 async def admin_login(credentials: AdminLogin):
@@ -579,7 +614,7 @@ async def get_all_payments(admin: str = Depends(verify_admin)):
     enriched_payments = []
     for payment in payments:
         user = await db.users.find_one({"id": payment["userId"]}, {"_id": 0, "password_hash": 0})
-        course = next((c for c in COURSES_DATA if c['id'] == payment["courseId"]), None)
+        course = await get_course_by_id(payment["courseId"])
         
         enriched_payments.append({
             **payment,
@@ -613,6 +648,273 @@ async def get_admin_stats(admin: str = Depends(verify_admin)):
         "totalRevenue": total_revenue
     }
 
+@api_router.post("/admin/lessons/add")
+async def add_lesson(lesson_data: LessonUpload, admin: str = Depends(verify_admin)):
+    """Add a new lesson to a course"""
+    lesson_id = str(uuid.uuid4())
+    
+    # Convert YouTube watch URL to embed URL if needed
+    video_url = lesson_data.videoUrl
+    if "youtube.com/watch?v=" in video_url:
+        video_id = video_url.split("watch?v=")[1].split("&")[0]
+        video_url = f"https://www.youtube.com/embed/{video_id}"
+    elif "youtu.be/" in video_url:
+        video_id = video_url.split("youtu.be/")[1].split("?")[0]
+        video_url = f"https://www.youtube.com/embed/{video_id}"
+    
+    lesson_doc = {
+        "id": lesson_id,
+        "courseId": lesson_data.courseId,
+        "title": lesson_data.title,
+        "videoUrl": video_url,
+        "pdfUrl": lesson_data.pdfUrl,
+        "duration": lesson_data.duration,
+        "order": lesson_data.order,
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.lessons.insert_one(lesson_doc)
+    return {"success": True, "lessonId": lesson_id, "message": "Aula adicionada com sucesso"}
+
+@api_router.get("/admin/lessons/{course_id}")
+async def get_course_lessons(course_id: str, admin: str = Depends(verify_admin)):
+    """Get all custom lessons for a course"""
+    lessons = await db.lessons.find({"courseId": course_id}, {"_id": 0}).sort("order", 1).to_list(1000)
+    return lessons
+
+@api_router.delete("/admin/lessons/{lesson_id}")
+async def delete_lesson(lesson_id: str, admin: str = Depends(verify_admin)):
+    """Delete a lesson"""
+    result = await db.lessons.delete_one({"id": lesson_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Aula não encontrada")
+    return {"success": True, "message": "Aula deletada com sucesso"}
+
+@api_router.put("/admin/lessons/{lesson_id}")
+async def update_lesson(lesson_id: str, lesson_data: LessonUpload, admin: str = Depends(verify_admin)):
+    """Update a lesson"""
+    # Convert YouTube URL
+    video_url = lesson_data.videoUrl
+    if "youtube.com/watch?v=" in video_url:
+        video_id = video_url.split("watch?v=")[1].split("&")[0]
+        video_url = f"https://www.youtube.com/embed/{video_id}"
+    elif "youtu.be/" in video_url:
+        video_id = video_url.split("youtu.be/")[1].split("?")[0]
+        video_url = f"https://www.youtube.com/embed/{video_id}"
+    
+    update_data = {
+        "title": lesson_data.title,
+        "videoUrl": video_url,
+        "pdfUrl": lesson_data.pdfUrl,
+        "duration": lesson_data.duration,
+        "order": lesson_data.order,
+        "updatedAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.lessons.update_one({"id": lesson_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Aula não encontrada")
+    return {"success": True, "message": "Aula atualizada com sucesso"}
+
+# ==================== Admin Course Management ====================
+
+class CourseCreate(BaseModel):
+    title: str
+    category: str
+    description: str
+    price: float
+    thumbnail: Optional[str] = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800"
+    language: str = "pt"
+    published: bool = True
+
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    thumbnail: Optional[str] = None
+    language: Optional[str] = None
+    published: Optional[bool] = None
+
+@api_router.get("/admin/courses")
+async def get_all_courses_admin(admin: str = Depends(verify_admin)):
+    """Get all courses including unpublished (admin only)"""
+    await seed_courses()
+    courses = await db.courses.find({}, {"_id": 0}).to_list(1000)
+    
+    # Add lessons count for each course
+    for course in courses:
+        lessons_count = await db.lessons.count_documents({"courseId": course["id"]})
+        course["lessonsCount"] = lessons_count
+    
+    return courses
+
+@api_router.post("/admin/courses")
+async def create_course(course_data: CourseCreate, admin: str = Depends(verify_admin)):
+    """Create a new course (admin only)"""
+    # Generate course ID from title
+    course_id = course_data.title.lower().replace(" ", "-").replace("ç", "c").replace("ã", "a").replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+    course_id = ''.join(c for c in course_id if c.isalnum() or c == '-')
+    
+    # Check if course ID already exists
+    existing = await db.courses.find_one({"id": course_id})
+    if existing:
+        course_id = f"{course_id}-{str(uuid.uuid4())[:8]}"
+    
+    course_doc = {
+        "id": course_id,
+        "title": course_data.title,
+        "category": course_data.category,
+        "description": course_data.description,
+        "price": course_data.price,
+        "thumbnail": course_data.thumbnail,
+        "language": course_data.language,
+        "published": course_data.published,
+        "lessons": [],
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.courses.insert_one(course_doc)
+    return {"success": True, "courseId": course_id, "message": "Curso criado com sucesso"}
+
+@api_router.put("/admin/courses/{course_id}")
+async def update_course(course_id: str, course_data: CourseUpdate, admin: str = Depends(verify_admin)):
+    """Update a course (admin only)"""
+    # Build update dict only with provided fields
+    update_data = {}
+    if course_data.title is not None:
+        update_data["title"] = course_data.title
+    if course_data.category is not None:
+        update_data["category"] = course_data.category
+    if course_data.description is not None:
+        update_data["description"] = course_data.description
+    if course_data.price is not None:
+        update_data["price"] = course_data.price
+    if course_data.thumbnail is not None:
+        update_data["thumbnail"] = course_data.thumbnail
+    if course_data.language is not None:
+        update_data["language"] = course_data.language
+    if course_data.published is not None:
+        update_data["published"] = course_data.published
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+    
+    update_data["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.courses.update_one({"id": course_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    return {"success": True, "message": "Curso atualizado com sucesso"}
+
+@api_router.delete("/admin/courses/{course_id}")
+async def delete_course(course_id: str, admin: str = Depends(verify_admin)):
+    """Delete a course (admin only)"""
+    # Delete course
+    result = await db.courses.delete_one({"id": course_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    # Delete all lessons associated with the course
+    await db.lessons.delete_many({"courseId": course_id})
+    
+    return {"success": True, "message": "Curso e aulas deletados com sucesso"}
+
+@api_router.put("/admin/courses/{course_id}/publish")
+async def toggle_course_publish(course_id: str, admin: str = Depends(verify_admin)):
+    """Toggle course publish status (admin only)"""
+    course = await get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    new_status = not course.get("published", True)
+    await db.courses.update_one({"id": course_id}, {"$set": {"published": new_status}})
+    
+    status_text = "publicado" if new_status else "despublicado"
+    return {"success": True, "published": new_status, "message": f"Curso {status_text} com sucesso"}
+
+@api_router.put("/admin/courses/{course_id}/price")
+async def update_course_price(course_id: str, price: float, admin: str = Depends(verify_admin)):
+    """Update course price (admin only)"""
+    result = await db.courses.update_one({"id": course_id}, {"$set": {"price": price}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    return {"success": True, "message": f"Preço atualizado para R$ {price:.2f}"}
+
+# ==================== Admin User Management ====================
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, admin: str = Depends(verify_admin)):
+    """Delete a user (admin only)"""
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Also delete user's payments
+    await db.payments.delete_many({"userId": user_id})
+    
+    return {"success": True, "message": "Usuário deletado com sucesso"}
+
+class GrantAccessRequest(BaseModel):
+    userId: str
+    courseId: str
+
+@api_router.post("/admin/users/grant-access")
+async def grant_free_access(data: GrantAccessRequest, admin: str = Depends(verify_admin)):
+    """Grant free access to a course for a user (admin only)"""
+    # Verify user exists
+    user = await db.users.find_one({"id": data.userId})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Verify course exists
+    course = await get_course_by_id(data.courseId)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    # Check if user already has the course
+    if data.courseId in user.get("purchasedCourses", []):
+        raise HTTPException(status_code=400, detail="Usuário já possui acesso a este curso")
+    
+    # Grant access
+    await db.users.update_one(
+        {"id": data.userId},
+        {"$addToSet": {"purchasedCourses": data.courseId}}
+    )
+    
+    # Create a record of the free grant
+    payment_doc = {
+        "id": str(uuid.uuid4()),
+        "userId": data.userId,
+        "courseId": data.courseId,
+        "mercadopagoId": "FREE_ACCESS",
+        "status": "approved",
+        "amount": 0.00,
+        "note": "Acesso gratuito concedido pelo administrador",
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
+    await db.payments.insert_one(payment_doc)
+    
+    return {"success": True, "message": f"Acesso gratuito ao curso '{course['title']}' concedido com sucesso"}
+
+@api_router.post("/admin/users/revoke-access")
+async def revoke_course_access(data: GrantAccessRequest, admin: str = Depends(verify_admin)):
+    """Revoke access to a course from a user (admin only)"""
+    # Verify user exists
+    user = await db.users.find_one({"id": data.userId})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Remove course from user's purchased courses
+    await db.users.update_one(
+        {"id": data.userId},
+        {"$pull": {"purchasedCourses": data.courseId}}
+    )
+    
+    return {"success": True, "message": "Acesso ao curso revogado com sucesso"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -623,13 +925,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

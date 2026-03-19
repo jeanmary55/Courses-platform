@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Users, DollarSign, ShoppingCart, Clock, Search, LogOut } from 'lucide-react';
+import { Users, DollarSign, ShoppingCart, Clock, Search, LogOut, BookOpen, Plus, Trash2, Eye, EyeOff, Edit, Gift, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -12,13 +12,36 @@ export default function AdminPanel() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [lessons, setLessons] = useState([]);
+  const [showAddLesson, setShowAddLesson] = useState(false);
+  const [showAddCourse, setShowAddCourse] = useState(false);
+  const [showEditCourse, setShowEditCourse] = useState(false);
+  const [showGrantAccess, setShowGrantAccess] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [lessonForm, setLessonForm] = useState({
+    title: '',
+    videoUrl: '',
+    pdfUrl: '',
+    duration: '15:00',
+    order: 1
+  });
+  const [courseForm, setCourseForm] = useState({
+    title: '',
+    category: 'Tecnologia',
+    description: '',
+    price: 197.00,
+    thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
+    published: true
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if admin is logged in
     const adminToken = localStorage.getItem('adminToken');
     if (!adminToken) {
       navigate('/admin-login');
@@ -27,22 +50,36 @@ export default function AdminPanel() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'lessons' && selectedCourse) {
+      fetchLessons();
+    }
+  }, [activeTab, selectedCourse]);
+
+  const getHeaders = () => {
+    const adminToken = localStorage.getItem('adminToken');
+    return { Authorization: `Bearer ${adminToken}` };
+  };
+
   const fetchData = async () => {
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      const headers = {
-        Authorization: `Bearer ${adminToken}`
-      };
+      const headers = getHeaders();
 
-      const [statsRes, usersRes, paymentsRes] = await Promise.all([
+      const [statsRes, usersRes, paymentsRes, coursesRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers }),
         axios.get(`${API}/admin/users`, { headers }),
-        axios.get(`${API}/admin/payments`, { headers })
+        axios.get(`${API}/admin/payments`, { headers }),
+        axios.get(`${API}/admin/courses`, { headers })
       ]);
 
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setPayments(paymentsRes.data);
+      setCourses(coursesRes.data);
+      
+      if (coursesRes.data.length > 0 && !selectedCourse) {
+        setSelectedCourse(coursesRes.data[0].id);
+      }
     } catch (error) {
       console.error('Error fetching admin data:', error);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -52,6 +89,168 @@ export default function AdminPanel() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLessons = async () => {
+    if (!selectedCourse) return;
+    try {
+      const response = await axios.get(`${API}/admin/lessons/${selectedCourse}`, {
+        headers: getHeaders()
+      });
+      setLessons(response.data);
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+    }
+  };
+
+  const handleAddLesson = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API}/admin/lessons/add`, {
+        courseId: selectedCourse,
+        ...lessonForm
+      }, { headers: getHeaders() });
+      
+      setShowAddLesson(false);
+      setLessonForm({ title: '', videoUrl: '', pdfUrl: '', duration: '15:00', order: lessons.length + 1 });
+      fetchLessons();
+      alert('Aula adicionada com sucesso!');
+    } catch (error) {
+      console.error('Error adding lesson:', error);
+      alert('Erro ao adicionar aula');
+    }
+  };
+
+  const handleDeleteLesson = async (lessonId) => {
+    if (!window.confirm('Tem certeza que deseja deletar esta aula?')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/lessons/${lessonId}`, { headers: getHeaders() });
+      fetchLessons();
+      alert('Aula deletada com sucesso!');
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+      alert('Erro ao deletar aula');
+    }
+  };
+
+  // Course Management Functions
+  const handleAddCourse = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API}/admin/courses`, courseForm, { headers: getHeaders() });
+      setShowAddCourse(false);
+      setCourseForm({
+        title: '',
+        category: 'Tecnologia',
+        description: '',
+        price: 197.00,
+        thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800',
+        published: true
+      });
+      fetchData();
+      alert('Curso criado com sucesso!');
+    } catch (error) {
+      console.error('Error creating course:', error);
+      alert('Erro ao criar curso');
+    }
+  };
+
+  const handleUpdateCourse = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`${API}/admin/courses/${editingCourse.id}`, courseForm, { headers: getHeaders() });
+      setShowEditCourse(false);
+      setEditingCourse(null);
+      fetchData();
+      alert('Curso atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating course:', error);
+      alert('Erro ao atualizar curso');
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    if (!window.confirm('Tem certeza que deseja deletar este curso? Todas as aulas também serão deletadas.')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/courses/${courseId}`, { headers: getHeaders() });
+      fetchData();
+      alert('Curso deletado com sucesso!');
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      alert('Erro ao deletar curso');
+    }
+  };
+
+  const handleTogglePublish = async (courseId) => {
+    try {
+      const response = await axios.put(`${API}/admin/courses/${courseId}/publish`, {}, { headers: getHeaders() });
+      fetchData();
+      alert(response.data.message);
+    } catch (error) {
+      console.error('Error toggling publish:', error);
+      alert('Erro ao alterar status de publicação');
+    }
+  };
+
+  const openEditCourse = (course) => {
+    setEditingCourse(course);
+    setCourseForm({
+      title: course.title,
+      category: course.category,
+      description: course.description,
+      price: course.price,
+      thumbnail: course.thumbnail,
+      published: course.published
+    });
+    setShowEditCourse(true);
+  };
+
+  // User Management Functions
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita.')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/users/${userId}`, { headers: getHeaders() });
+      fetchData();
+      alert('Usuário deletado com sucesso!');
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('Erro ao deletar usuário');
+    }
+  };
+
+  const handleGrantAccess = async (courseId) => {
+    try {
+      await axios.post(`${API}/admin/users/grant-access`, {
+        userId: selectedUser.id,
+        courseId: courseId
+      }, { headers: getHeaders() });
+      setShowGrantAccess(false);
+      setSelectedUser(null);
+      fetchData();
+      alert('Acesso gratuito concedido com sucesso!');
+    } catch (error) {
+      console.error('Error granting access:', error);
+      alert(error.response?.data?.detail || 'Erro ao conceder acesso');
+    }
+  };
+
+  const handleRevokeAccess = async (userId, courseId) => {
+    if (!window.confirm('Tem certeza que deseja revogar o acesso deste usuário ao curso?')) return;
+    
+    try {
+      await axios.post(`${API}/admin/users/revoke-access`, {
+        userId: userId,
+        courseId: courseId
+      }, { headers: getHeaders() });
+      fetchData();
+      alert('Acesso revogado com sucesso!');
+    } catch (error) {
+      console.error('Error revoking access:', error);
+      alert('Erro ao revogar acesso');
     }
   };
 
@@ -72,9 +271,14 @@ export default function AdminPanel() {
     payment.course?.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredCourses = courses.filter(course =>
+    course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" data-testid="admin-loading">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto"></div>
           <p className="mt-4 text-slate-600">Carregando...</p>
@@ -84,7 +288,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8" data-testid="admin-panel">
       <div className="container mx-auto px-6 md:px-12">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -95,6 +299,7 @@ export default function AdminPanel() {
             onClick={handleLogout}
             variant="outline"
             className="gap-2"
+            data-testid="admin-logout-btn"
           >
             <LogOut className="w-4 h-4" />
             Sair
@@ -102,9 +307,10 @@ export default function AdminPanel() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-slate-200">
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-200">
           <button
             onClick={() => setActiveTab('dashboard')}
+            data-testid="tab-dashboard"
             className={`px-6 py-3 font-medium transition-colors ${
               activeTab === 'dashboard'
                 ? 'text-violet-600 border-b-2 border-violet-600'
@@ -114,7 +320,19 @@ export default function AdminPanel() {
             Dashboard
           </button>
           <button
+            onClick={() => setActiveTab('courses')}
+            data-testid="tab-courses"
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'courses'
+                ? 'text-violet-600 border-b-2 border-violet-600'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Cursos ({courses.length})
+          </button>
+          <button
             onClick={() => setActiveTab('users')}
+            data-testid="tab-users"
             className={`px-6 py-3 font-medium transition-colors ${
               activeTab === 'users'
                 ? 'text-violet-600 border-b-2 border-violet-600'
@@ -125,6 +343,7 @@ export default function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveTab('payments')}
+            data-testid="tab-payments"
             className={`px-6 py-3 font-medium transition-colors ${
               activeTab === 'payments'
                 ? 'text-violet-600 border-b-2 border-violet-600'
@@ -133,11 +352,22 @@ export default function AdminPanel() {
           >
             Pagamentos ({payments.length})
           </button>
+          <button
+            onClick={() => setActiveTab('lessons')}
+            data-testid="tab-lessons"
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'lessons'
+                ? 'text-violet-600 border-b-2 border-violet-600'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Gerenciar Aulas
+          </button>
         </div>
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" data-testid="dashboard-stats">
             <div className="bg-white rounded-xl p-6 shadow-lg border border-slate-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-violet-100 rounded-full flex items-center justify-center">
@@ -171,18 +401,301 @@ export default function AdminPanel() {
             <div className="bg-white rounded-xl p-6 shadow-lg border border-slate-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-amber-600" />
+                  <BookOpen className="w-6 h-6 text-amber-600" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900">{stats?.pendingPayments || 0}</h3>
-              <p className="text-sm text-slate-600">Pagamentos Pendentes</p>
+              <h3 className="text-2xl font-bold text-slate-900">{courses.length}</h3>
+              <p className="text-sm text-slate-600">Total de Cursos</p>
+            </div>
+          </div>
+        )}
+
+        {/* Courses Tab */}
+        {activeTab === 'courses' && (
+          <div data-testid="courses-tab">
+            <div className="mb-6 flex flex-wrap items-center gap-4">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="Buscar curso..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="search-courses"
+                />
+              </div>
+              <Button
+                onClick={() => setShowAddCourse(true)}
+                className="bg-violet-600 hover:bg-violet-700 gap-2"
+                data-testid="add-course-btn"
+              >
+                <Plus className="w-4 h-4" />
+                Novo Curso
+              </Button>
+            </div>
+
+            {/* Add Course Modal */}
+            {showAddCourse && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold">Novo Curso</h3>
+                      <button onClick={() => setShowAddCourse(false)} className="text-slate-400 hover:text-slate-600">
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <form onSubmit={handleAddCourse} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Título</label>
+                        <Input
+                          type="text"
+                          value={courseForm.title}
+                          onChange={(e) => setCourseForm({...courseForm, title: e.target.value})}
+                          placeholder="Ex: React para Iniciantes"
+                          required
+                          data-testid="course-title-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Categoria</label>
+                        <select
+                          value={courseForm.category}
+                          onChange={(e) => setCourseForm({...courseForm, category: e.target.value})}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                          data-testid="course-category-select"
+                        >
+                          <option value="Tecnologia">Tecnologia</option>
+                          <option value="Idiomas">Idiomas</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Descrição</label>
+                        <textarea
+                          value={courseForm.description}
+                          onChange={(e) => setCourseForm({...courseForm, description: e.target.value})}
+                          placeholder="Descrição do curso..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg min-h-[100px]"
+                          required
+                          data-testid="course-description-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Preço (R$)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={courseForm.price}
+                          onChange={(e) => setCourseForm({...courseForm, price: parseFloat(e.target.value)})}
+                          required
+                          data-testid="course-price-input"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">URL da Imagem</label>
+                        <Input
+                          type="url"
+                          value={courseForm.thumbnail}
+                          onChange={(e) => setCourseForm({...courseForm, thumbnail: e.target.value})}
+                          placeholder="https://..."
+                          data-testid="course-thumbnail-input"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="published"
+                          checked={courseForm.published}
+                          onChange={(e) => setCourseForm({...courseForm, published: e.target.checked})}
+                          className="w-4 h-4"
+                          data-testid="course-published-checkbox"
+                        />
+                        <label htmlFor="published" className="text-sm text-slate-700">Publicar imediatamente</label>
+                      </div>
+                      <div className="flex gap-3 pt-4">
+                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" data-testid="save-course-btn">
+                          Criar Curso
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setShowAddCourse(false)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Course Modal */}
+            {showEditCourse && editingCourse && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold">Editar Curso</h3>
+                      <button onClick={() => { setShowEditCourse(false); setEditingCourse(null); }} className="text-slate-400 hover:text-slate-600">
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <form onSubmit={handleUpdateCourse} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Título</label>
+                        <Input
+                          type="text"
+                          value={courseForm.title}
+                          onChange={(e) => setCourseForm({...courseForm, title: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Categoria</label>
+                        <select
+                          value={courseForm.category}
+                          onChange={(e) => setCourseForm({...courseForm, category: e.target.value})}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg"
+                        >
+                          <option value="Tecnologia">Tecnologia</option>
+                          <option value="Idiomas">Idiomas</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Descrição</label>
+                        <textarea
+                          value={courseForm.description}
+                          onChange={(e) => setCourseForm({...courseForm, description: e.target.value})}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg min-h-[100px]"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Preço (R$)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={courseForm.price}
+                          onChange={(e) => setCourseForm({...courseForm, price: parseFloat(e.target.value)})}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">URL da Imagem</label>
+                        <Input
+                          type="url"
+                          value={courseForm.thumbnail}
+                          onChange={(e) => setCourseForm({...courseForm, thumbnail: e.target.value})}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="edit-published"
+                          checked={courseForm.published}
+                          onChange={(e) => setCourseForm({...courseForm, published: e.target.checked})}
+                          className="w-4 h-4"
+                        />
+                        <label htmlFor="edit-published" className="text-sm text-slate-700">Publicado</label>
+                      </div>
+                      <div className="flex gap-3 pt-4">
+                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                          Salvar Alterações
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => { setShowEditCourse(false); setEditingCourse(null); }}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Courses List */}
+            <div className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Curso</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Categoria</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Preço</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Aulas</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Status</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredCourses.map((course) => (
+                      <tr key={course.id} className="hover:bg-slate-50" data-testid={`course-row-${course.id}`}>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />
+                            <div>
+                              <div className="font-medium text-slate-900">{course.title}</div>
+                              <div className="text-sm text-slate-500 truncate max-w-[200px]">{course.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            course.category === 'Tecnologia' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {course.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-medium text-slate-900">
+                          R$ {course.price?.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {course.lessonsCount || 0} aulas
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                            course.published ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-800'
+                          }`}>
+                            {course.published ? 'Publicado' : 'Rascunho'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openEditCourse(course)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                              title="Editar"
+                              data-testid={`edit-course-${course.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleTogglePublish(course.id)}
+                              className={`p-2 rounded-lg ${course.published ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}
+                              title={course.published ? 'Despublicar' : 'Publicar'}
+                              data-testid={`toggle-publish-${course.id}`}
+                            >
+                              {course.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCourse(course.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              title="Deletar"
+                              data-testid={`delete-course-${course.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div>
+          <div data-testid="users-tab">
             <div className="mb-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -192,9 +705,48 @@ export default function AdminPanel() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
+                  data-testid="search-users"
                 />
               </div>
             </div>
+
+            {/* Grant Access Modal */}
+            {showGrantAccess && selectedUser && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold">Liberar Acesso Gratuito</h3>
+                      <button onClick={() => { setShowGrantAccess(false); setSelectedUser(null); }} className="text-slate-400 hover:text-slate-600">
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <p className="text-slate-600 mb-4">
+                      Selecione um curso para liberar acesso gratuito para <strong>{selectedUser.firstName} {selectedUser.lastName}</strong>:
+                    </p>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {courses.filter(c => !selectedUser.purchasedCourses?.includes(c.id)).map(course => (
+                        <button
+                          key={course.id}
+                          onClick={() => handleGrantAccess(course.id)}
+                          className="w-full p-4 text-left border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-4"
+                          data-testid={`grant-access-${course.id}`}
+                        >
+                          <img src={course.thumbnail} alt={course.title} className="w-12 h-12 rounded-lg object-cover" />
+                          <div>
+                            <div className="font-medium text-slate-900">{course.title}</div>
+                            <div className="text-sm text-slate-500">R$ {course.price?.toFixed(2)}</div>
+                          </div>
+                        </button>
+                      ))}
+                      {courses.filter(c => !selectedUser.purchasedCourses?.includes(c.id)).length === 0 && (
+                        <p className="text-slate-500 text-center py-4">Este usuário já possui acesso a todos os cursos.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
               <div className="overflow-x-auto">
@@ -203,30 +755,63 @@ export default function AdminPanel() {
                     <tr>
                       <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Nome</th>
                       <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Email</th>
-                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Senha (Hash)</th>
                       <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Cursos</th>
                       <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Cadastro</th>
+                      <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-slate-50">
+                      <tr key={user.id} className="hover:bg-slate-50" data-testid={`user-row-${user.id}`}>
                         <td className="px-6 py-4">
                           <div className="font-medium text-slate-900">{user.firstName} {user.lastName}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
                         <td className="px-6 py-4">
-                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700">
-                            {user.password_hash ? user.password_hash.substring(0, 20) + '...' : 'N/A'}
-                          </code>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-violet-100 text-violet-800">
-                            {user.purchasedCourses?.length || 0} cursos
-                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {user.purchasedCourses?.length > 0 ? (
+                              user.purchasedCourses.map(courseId => {
+                                const course = courses.find(c => c.id === courseId);
+                                return (
+                                  <span key={courseId} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-violet-100 text-violet-800">
+                                    {course?.title || courseId}
+                                    <button
+                                      onClick={() => handleRevokeAccess(user.id, courseId)}
+                                      className="hover:text-red-600"
+                                      title="Revogar acesso"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                );
+                              })
+                            ) : (
+                              <span className="text-slate-400 text-sm">Nenhum curso</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">
                           {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { setSelectedUser(user); setShowGrantAccess(true); }}
+                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"
+                              title="Liberar acesso gratuito"
+                              data-testid={`grant-access-btn-${user.id}`}
+                            >
+                              <Gift className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              title="Deletar usuário"
+                              data-testid={`delete-user-${user.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -239,7 +824,7 @@ export default function AdminPanel() {
 
         {/* Payments Tab */}
         {activeTab === 'payments' && (
-          <div>
+          <div data-testid="payments-tab">
             <div className="mb-6">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -249,6 +834,7 @@ export default function AdminPanel() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
+                  data-testid="search-payments"
                 />
               </div>
             </div>
@@ -276,7 +862,11 @@ export default function AdminPanel() {
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600">{payment.course?.title}</td>
                         <td className="px-6 py-4 font-medium text-slate-900">
-                          R$ {payment.amount?.toFixed(2)}
+                          {payment.amount === 0 ? (
+                            <span className="text-emerald-600">Gratuito</span>
+                          ) : (
+                            `R$ ${payment.amount?.toFixed(2)}`
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -298,6 +888,168 @@ export default function AdminPanel() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Lessons Tab */}
+        {activeTab === 'lessons' && (
+          <div data-testid="lessons-tab">
+            <div className="mb-6 flex flex-wrap items-center gap-4">
+              <select
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="px-4 py-2 border border-slate-200 rounded-lg min-w-[200px]"
+                data-testid="select-course-lessons"
+              >
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+                ))}
+              </select>
+              <Button
+                onClick={() => { setShowAddLesson(true); setLessonForm({...lessonForm, order: lessons.length + 1}); }}
+                className="bg-violet-600 hover:bg-violet-700 gap-2"
+                data-testid="add-lesson-btn"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar Aula
+              </Button>
+            </div>
+
+            {/* Add Lesson Form */}
+            {showAddLesson && (
+              <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-6 mb-6">
+                <h3 className="text-xl font-semibold mb-4">Nova Aula</h3>
+                <form onSubmit={handleAddLesson} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Título da Aula</label>
+                    <Input
+                      type="text"
+                      value={lessonForm.title}
+                      onChange={(e) => setLessonForm({...lessonForm, title: e.target.value})}
+                      placeholder="Ex: Aula 1: Introdução ao Python"
+                      required
+                      data-testid="lesson-title-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">URL do YouTube</label>
+                    <Input
+                      type="url"
+                      value={lessonForm.videoUrl}
+                      onChange={(e) => setLessonForm({...lessonForm, videoUrl: e.target.value})}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      required
+                      data-testid="lesson-video-input"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Cole o link do vídeo do YouTube</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">URL do PDF (Opcional)</label>
+                    <Input
+                      type="url"
+                      value={lessonForm.pdfUrl}
+                      onChange={(e) => setLessonForm({...lessonForm, pdfUrl: e.target.value})}
+                      placeholder="https://drive.google.com/... ou link do PDF"
+                      data-testid="lesson-pdf-input"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Ordem</label>
+                      <Input
+                        type="number"
+                        value={lessonForm.order}
+                        onChange={(e) => setLessonForm({...lessonForm, order: parseInt(e.target.value)})}
+                        min="1"
+                        required
+                        data-testid="lesson-order-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Duração</label>
+                      <Input
+                        type="text"
+                        value={lessonForm.duration}
+                        onChange={(e) => setLessonForm({...lessonForm, duration: e.target.value})}
+                        placeholder="15:00"
+                        required
+                        data-testid="lesson-duration-input"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" data-testid="save-lesson-btn">
+                      Salvar Aula
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setShowAddLesson(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Lessons List */}
+            <div className="bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Aulas ({lessons.length})
+                </h3>
+                {lessons.length === 0 ? (
+                  <p className="text-slate-500 text-center py-8">
+                    Nenhuma aula adicionada ainda. Clique em "Adicionar Aula" para começar.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {lessons.map((lesson) => (
+                      <div key={lesson.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50" data-testid={`lesson-row-${lesson.id}`}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">#{lesson.order}</span>
+                            <div>
+                              <h4 className="font-medium text-slate-900">{lesson.title}</h4>
+                              <div className="flex items-center gap-4 mt-1">
+                                <span className="text-sm text-slate-500">Duração: {lesson.duration}</span>
+                                {lesson.pdfUrl && (
+                                  <span className="text-sm text-emerald-600">PDF disponível</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <a
+                            href={lesson.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                          >
+                            Ver Vídeo
+                          </a>
+                          {lesson.pdfUrl && (
+                            <a
+                              href={lesson.pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1 text-sm text-emerald-600 hover:bg-emerald-50 rounded"
+                            >
+                              Ver PDF
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleDeleteLesson(lesson.id)}
+                            className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                            data-testid={`delete-lesson-${lesson.id}`}
+                          >
+                            Deletar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
