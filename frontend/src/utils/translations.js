@@ -1,3 +1,216 @@
+export const coursesTranslations = {
+  pt: {
+    'python-basics': {
+      title: 'Python para Iniciantes',
+      description: 'Aprenda Python do zero ao avançado com 20 aulas práticas'
+    },
+    'excel-mastery': {
+      title: 'Excel Completo',
+      description: 'Domine Excel com fórmulas, tabelas dinâmicas e muito mais'
+    },
+    'sql-database': {
+      title: 'SQL e Bancos de Dados',
+      description: 'Aprenda SQL para gerenciar bancos de dados relacionais'
+    },
+    'word-professional': {
+      title: 'Word Profissional',
+      description: 'Crie documentos profissionais com Microsoft Word'
+    },
+    'html-css': {
+      title: 'HTML & CSS',
+      description: 'Crie sites incríveis com HTML5 e CSS3'
+    },
+    'javascript-modern': {
+      title: 'JavaScript Moderno',
+      description: 'Programação web com JavaScript ES6+'
+    },
+    'french-course': {
+      title: 'Francês Completo',
+      description: 'Aprenda francês do básico ao avançado'
+    },
+    'portuguese-course': {
+      title: 'Português Avançado',
+      description: 'Gramática e redação em português'
+    },
+    'english-course': {
+      title: 'Inglês do Zero',
+      description: 'Inglês para brasileiros - do básico ao fluente'
+    },
+    'spanish-course': {
+      title: 'Espanhol Rápido',
+      description: 'Aprenda espanhol de forma rápida e prática'
+    }
+  },
+  en: {
+    'python-basics': {
+      title: 'Python for Beginners',
+      description: 'Learn Python from zero to advanced with 20 practical lessons'
+    },
+    'excel-mastery': {
+      title: 'Complete Excel',
+      description: 'Master Excel with formulas, pivot tables and more'
+    },
+    'sql-database': {
+      title: 'SQL and Databases',
+      description: 'Learn SQL to manage relational databases'
+    },
+    'word-professional': {
+      title: 'Professional Word',
+      description: 'Create professional documents with Microsoft Word'
+    },
+    'html-css': {
+      title: 'HTML & CSS',
+      description: 'Create amazing websites with HTML5 and CSS3'
+    },
+    'javascript-modern': {
+      title: 'Modern JavaScript',
+      description: 'Web programming with JavaScript ES6+'
+    },
+    'french-course': {
+      title: 'Complete French',
+      description: 'Learn French from basic to advanced'
+    },
+    'portuguese-course': {
+      title: 'Advanced Portuguese',
+      description: 'Grammar and writing in Portuguese'
+    },
+    'english-course': {
+      title: 'English from Zero',
+      description: 'English for Brazilians - from basic to fluent'
+    },
+    'spanish-course': {
+      title: 'Quick Spanish',
+      description: 'Learn Spanish quickly and practically'
+    }
+  },
+  fr: {
+    'python-basics': {
+      title: 'Python pour Débutants',
+      description: 'Apprenez Python de zéro à avancé avec 20 leçons pratiques'
+    },
+    'excel-mastery': {
+      title: 'Excel Complet',
+      description: 'Maîtrisez Excel avec des formules, tableaux croisés et plus'
+    },
+    'sql-database': {
+      title: 'SQL et Bases de Données',
+      description: 'Apprenez SQL pour gérer les bases de données relationnelles'
+    },
+    'word-professional': {
+      title: 'Word Professionnel',
+      description: 'Créez des documents professionnels avec Microsoft Word'
+    },
+    'html-css': {
+      title: 'HTML & CSS',
+      description: 'Créez des sites web incroyables avec HTML5 et CSS3'
+    },
+    'javascript-modern': {
+      title: 'JavaScript Moderne',
+      description: 'Programmation web avec JavaScript ES6+'
+    },
+    'french-course': {
+      title: 'Français Complet',
+      description: 'Apprenez le français du niveau débutant à avancé'
+    },
+    'portuguese-course': {
+      title: 'Portugais Avancé',
+      description: 'Grammaire et rédaction en portugais'
+    },
+    'english-course': {
+      title: 'Anglais depuis Zéro',
+      description: 'Anglais pour Brésiliens - du débutant au courant'
+    },
+    'spanish-course': {
+      title: 'Espagnol Rapide',
+      description: 'Apprenez l\'espagnol rapidement et pratiquement'
+    }
+  },
+  es: {
+    'python-basics': {
+      title: 'Python para Principiantes',
+      description: 'Aprende Python desde cero hasta avanzado con 20 lecciones prácticas'
+    },
+    'excel-mastery': {
+      title: 'Excel Completo',
+      description: 'Domina Excel con fórmulas, tablas dinámicas y más'
+    },
+    'sql-database': {
+      title: 'SQL y Bases de Datos',
+      description: 'Aprende SQL para gestionar bases de datos relacionales'
+    },
+    'word-professional': {
+      title: 'Word Profesional',
+      description: 'Crea documentos profesionales con Microsoft Word'
+    },
+    'html-css': {
+      title: 'HTML & CSS',
+      description: 'Crea sitios web increíbles con HTML5 y CSS3'
+    },
+    'javascript-modern': {
+      title: 'JavaScript Moderno',
+      description: 'Programación web con JavaScript ES6+'
+    },
+    'french-course': {
+      title: 'Francés Completo',
+      description: 'Aprende francés desde básico hasta avanzado'
+    },
+    'portuguese-course': {
+      title: 'Portugués Avanzado',
+      description: 'Gramática y redacción en portugués'
+    },
+    'english-course': {
+      title: 'Inglés desde Cero',
+      description: 'Inglés para brasileños - desde básico hasta fluido'
+    },
+    'spanish-course': {
+      title: 'Español Rápido',
+      description: 'Aprende español de forma rápida y práctica'
+    }
+  },
+  ht: {
+    'python-basics': {
+      title: 'Python pou Kòmanse',
+      description: 'Aprann Python soti nan zewo rive nan avanse ak 20 leson pratik'
+    },
+    'excel-mastery': {
+      title: 'Excel Konplè',
+      description: 'Metrize Excel ak fòmil, tablo dinamik ak plis ankò'
+    },
+    'sql-database': {
+      title: 'SQL ak Baz Done',
+      description: 'Aprann SQL pou jere baz done relasyonèl'
+    },
+    'word-professional': {
+      title: 'Word Pwofesyonèl',
+      description: 'Kreye dokiman pwofesyonèl ak Microsoft Word'
+    },
+    'html-css': {
+      title: 'HTML & CSS',
+      description: 'Kreye sit entènèt entwayab ak HTML5 ak CSS3'
+    },
+    'javascript-modern': {
+      title: 'JavaScript Modèn',
+      description: 'Pwogramasyon wèb ak JavaScript ES6+'
+    },
+    'french-course': {
+      title: 'Franse Konplè',
+      description: 'Aprann franse soti nan debaz rive nan avanse'
+    },
+    'portuguese-course': {
+      title: 'Pòtigè Avanse',
+      description: 'Gramè ak redaksyon an pòtigè'
+    },
+    'english-course': {
+      title: 'Angle soti nan Zewo',
+      description: 'Angle pou Brezilyèn - soti nan debaz rive nan kouran'
+    },
+    'spanish-course': {
+      title: 'Panyòl Rapid',
+      description: 'Aprann panyòl rapid e pratik'
+    }
+  }
+};
+
 export const translations = {
   pt: {
     // Header

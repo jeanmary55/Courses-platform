@@ -532,6 +532,14 @@ class AdminLogin(BaseModel):
     email: EmailStr
     password: str
 
+class LessonUpload(BaseModel):
+    courseId: str
+    title: str
+    videoFile: str  # Base64 encoded video or URL
+    pdfFile: Optional[str] = None  # Base64 encoded PDF
+    order: int
+    duration: str
+
 @api_router.post("/admin/login")
 async def admin_login(credentials: AdminLogin):
     """Admin login"""

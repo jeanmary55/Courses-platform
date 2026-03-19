@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslatedCourses } from '../hooks/useTranslatedCourses';
 import { Button } from '../components/ui/button';
 import { Book, Clock, Play } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ export default function CourseDetail() {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  const translatedCourse = useTranslatedCourses(course ? [course] : [])[0];
   const isPurchased = user?.purchasedCourses?.includes(courseId);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function CourseDetail() {
     );
   }
 
-  if (!course) return null;
+  if (!translatedCourse) return null;
 
   return (
     <div className="min-h-screen bg-white" data-testid="course-detail-page">
@@ -99,20 +101,20 @@ export default function CourseDetail() {
 
             {/* Course Info */}
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 mb-4">{course.title}</h1>
+              <h1 className="text-4xl font-bold text-slate-900 mb-4">{translatedCourse.title}</h1>
               <div className="flex items-center gap-6 mb-6">
                 <div className="flex items-center gap-2 text-slate-600">
                   <Book className="w-5 h-5" />
-                  <span>{course.lessons.length} {t('lessons')}</span>
+                  <span>{translatedCourse.lessons.length} {t('lessons')}</span>
                 </div>
                 <span className="px-3 py-1 bg-violet-50 text-violet-600 text-sm font-medium rounded-full">
-                  {course.category}
+                  {translatedCourse.category}
                 </span>
               </div>
 
               <div className="prose max-w-none">
                 <h2 className="text-2xl font-semibold mb-4">{t('aboutCourse')}</h2>
-                <p className="text-slate-600 text-lg leading-relaxed">{course.description}</p>
+                <p className="text-slate-600 text-lg leading-relaxed">{translatedCourse.description}</p>
               </div>
             </div>
           </div>
@@ -125,7 +127,7 @@ export default function CourseDetail() {
                 <div className="bg-white rounded-xl border-2 border-violet-200 p-6 mb-6 shadow-lg" data-testid="price-card">
                   <div className="text-center mb-6">
                     <div className="text-4xl font-bold text-violet-600 mb-2">
-                      R$ {course.price.toFixed(2)}
+                      R$ {translatedCourse.price.toFixed(2)}
                     </div>
                     <p className="text-slate-600 text-sm">Acesso vitalício</p>
                   </div>
@@ -143,7 +145,7 @@ export default function CourseDetail() {
               <div className="bg-slate-50 rounded-xl p-6 max-h-[600px] overflow-y-auto" data-testid="lesson-list">
                 <h3 className="text-xl font-semibold mb-4">{t('courseContent')}</h3>
                 <div className="space-y-2">
-                  {course.lessons.map((lesson, index) => (
+                  {translatedCourse.lessons.map((lesson, index) => (
                     <button
                       key={lesson.id}
                       onClick={() => isPurchased && setSelectedLesson(lesson)}

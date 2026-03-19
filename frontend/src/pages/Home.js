@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslatedCourses } from '../hooks/useTranslatedCourses';
 import { CourseCard } from '../components/CourseCard';
 import { FAQ } from '../components/FAQ';
 import { Button } from '../components/ui/button';
@@ -15,6 +16,8 @@ export default function Home() {
   const [category, setCategory] = useState('all');
   const { t } = useLanguage();
   const navigate = useNavigate();
+  
+  const translatedCourses = useTranslatedCourses(courses);
 
   useEffect(() => {
     fetchCourses();
@@ -132,7 +135,7 @@ export default function Home() {
 
           {/* Course Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="courses-grid">
-            {courses.map((course) => (
+            {translatedCourses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
