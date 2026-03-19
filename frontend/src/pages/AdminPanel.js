@@ -860,12 +860,14 @@ export default function AdminPanel() {
                           </div>
                           <div className="text-sm text-slate-500">{payment.user?.email}</div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{payment.course?.title}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{payment.course?.title || 'Curso removido'}</td>
                         <td className="px-6 py-4 font-medium text-slate-900">
                           {payment.amount === 0 ? (
                             <span className="text-emerald-600">Gratuito</span>
+                          ) : payment.amount != null ? (
+                            `R$ ${payment.amount.toFixed(2)}`
                           ) : (
-                            `R$ ${payment.amount?.toFixed(2)}`
+                            <span className="text-slate-400">N/A</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
