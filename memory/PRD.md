@@ -27,7 +27,7 @@ Create a website named "Shalom Learning" to sell technology and language courses
 
 ## Implementation Status
 
-### Completed (Date: 2025-03-19)
+### Completed (Date: 2025-03-20)
 
 #### Core Features
 - [x] Full-stack MVP with course catalog
@@ -55,17 +55,39 @@ Create a website named "Shalom Learning" to sell technology and language courses
   - [x] Add optional PDF URL for lessons
   - [x] Delete lessons
   - [x] List lessons by course
+- [x] **Coupon System** (NEW)
+  - [x] Create coupons (percentage or fixed discount)
+  - [x] Set expiration date
+  - [x] Set maximum uses
+  - [x] Restrict to specific user
+  - [x] Restrict to specific course
+  - [x] Set minimum purchase amount
+  - [x] Activate/Deactivate coupons
+  - [x] Delete coupons
+
+#### Student Features
+- [x] **Course Lessons Display**
+  - [x] Video player for purchased courses (YouTube embed)
+  - [x] PDF download button for lessons with materials
+  - [x] Lesson navigation in sidebar
+  - [x] "You own this course" badge
+  - [x] Locked lessons for non-purchased courses
+
+#### Checkout Features
+- [x] **Coupon Application**
+  - [x] Coupon input field
+  - [x] Real-time validation
+  - [x] Discount display
+  - [x] Final price calculation
+  - [x] Remove coupon option
 
 ---
 
 ## Prioritized Backlog
 
-### P0 - Critical
-- [ ] Display lessons to students who purchased courses (CourseDetail/MyCourses pages)
-
 ### P1 - Important
 - [ ] Email notifications for purchase confirmations
-- [ ] Student progress tracking
+- [ ] Student progress tracking (mark lessons as completed)
 
 ### P2 - Nice to Have
 - [ ] Digital certificates upon course completion
@@ -101,9 +123,16 @@ Create a website named "Shalom Learning" to sell technology and language courses
 - `GET /api/admin/lessons/{course_id}` - List lessons
 - `POST /api/admin/lessons/add` - Add lesson
 - `DELETE /api/admin/lessons/{id}` - Delete lesson
+- `GET /api/admin/coupons` - List coupons
+- `POST /api/admin/coupons` - Create coupon
+- `PUT /api/admin/coupons/{id}` - Update coupon
+- `DELETE /api/admin/coupons/{id}` - Delete coupon
+
+### Coupons
+- `POST /api/coupons/validate` - Validate and calculate discount
 
 ### Payments
-- `POST /api/payments/create-preference` - Create Mercado Pago preference
+- `POST /api/payments/create-preference` - Create Mercado Pago preference (accepts couponCode)
 - `POST /api/webhooks/mercadopago` - Payment webhook
 - `GET /api/my-courses` - User's purchased courses
 
@@ -153,6 +182,24 @@ Create a website named "Shalom Learning" to sell technology and language courses
 }
 ```
 
+### coupons
+```json
+{
+  "id": "uuid",
+  "code": "string (unique, uppercase)",
+  "discountType": "percentage | fixed",
+  "discountValue": "float",
+  "maxUses": "int (optional)",
+  "currentUses": "int",
+  "expiresAt": "datetime (optional)",
+  "specificUserId": "uuid (optional)",
+  "specificCourseId": "string (optional)",
+  "minPurchaseAmount": "float (optional)",
+  "active": "boolean",
+  "createdAt": "datetime"
+}
+```
+
 ### payments
 ```json
 {
@@ -162,6 +209,9 @@ Create a website named "Shalom Learning" to sell technology and language courses
   "mercadopagoId": "string",
   "status": "pending | approved | rejected",
   "amount": "float",
+  "originalAmount": "float (optional)",
+  "discount": "float (optional)",
+  "couponCode": "string (optional)",
   "createdAt": "datetime"
 }
 ```
@@ -174,7 +224,9 @@ Create a website named "Shalom Learning" to sell technology and language courses
 ├── backend/
 │   ├── .env
 │   ├── requirements.txt
-│   └── server.py
+│   ├── server.py
+│   └── tests/
+│       └── test_coupon_system.py
 ├── frontend/
 │   ├── .env
 │   ├── package.json
@@ -184,6 +236,8 @@ Create a website named "Shalom Learning" to sell technology and language courses
 │       ├── hooks/
 │       ├── pages/
 │       │   ├── AdminPanel.js
+│       │   ├── Checkout.js
+│       │   ├── CourseDetail.js
 │       │   ├── Home.js
 │       │   ├── Login.js
 │       │   ├── MyCourses.js
@@ -191,5 +245,15 @@ Create a website named "Shalom Learning" to sell technology and language courses
 │       └── utils/translations.js
 ├── memory/
 │   └── PRD.md
+├── test_reports/
+│   ├── iteration_2.json
+│   └── iteration_3.json
 └── DOCUMENTACAO.md
 ```
+
+---
+
+## Test Credentials
+- **Admin**: jeanlusjeanmarysagehomme@gmail.com / Bondye509@
+- **Test User**: testcoupon@test.com / test123
+- **Test Coupon**: TESTE10 (10% discount)
