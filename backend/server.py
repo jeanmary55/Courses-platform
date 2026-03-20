@@ -464,7 +464,7 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
         },
         "auto_return": "approved",
         "external_reference": f"{user_id}_{payment_data.courseId}_{str(uuid.uuid4())[:8]}",
-        "notification_url": f"{os.environ.get('REACT_APP_BACKEND_URL', 'http://localhost:8001')}/api/webhooks/mercadopago",
+        "notification_url": f"{os.environ.get('BACKEND_URL', 'http://localhost:8001')}/api/webhooks/mercadopago",
         "statement_descriptor": "Shalom Learning",
         "binary_mode": False
     }
