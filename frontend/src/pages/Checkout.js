@@ -4,8 +4,9 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
-import { Loader2, CheckCircle2, CreditCard } from 'lucide-react';
+import { Loader2, CheckCircle2, CreditCard, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -17,6 +18,9 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [preferenceId, setPreferenceId] = useState(null);
   const [publicKey, setPublicKey] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   const { token } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -46,13 +50,41 @@ export default function Checkout() {
     }
   };
 
+  const handleValidateCoupon = async () => {
+    if (!couponCode.trim()) return;
+    
+    setValidatingCoupon(true);
+    try {
+      const response = await axios.post(
+        `${API}/coupons/validate`,
+        { code: couponCode, courseId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setCouponApplied(response.data);
+      toast.success(response.data.message);
+    } catch (error) {
+      console.error('Error validating coupon:', error);
+      toast.error(error.response?.data?.detail || 'Cupom inválido');
+      setCouponApplied(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponApplied(null);
+    setCouponCode('');
+  };
+
   const handleCreatePayment = async () => {
     setLoading(true);
     try {
       const response = await axios.post(
         `${API}/payments/create-preference`,
         {
-          courseId: courseId
+          courseId: courseId,
+          couponCode: couponApplied?.code || null
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -61,7 +93,12 @@ export default function Checkout() {
 
       console.log('Payment created:', response.data);
       setPreferenceId(response.data.preferenceId);
-      toast.success('Pagamento criado! Clique no botão azul abaixo para pagar.');
+      
+      if (response.data.couponApplied) {
+        toast.success(`Pagamento criado com desconto de R$ ${response.data.discount?.toFixed(2)}!`);
+      } else {
+        toast.success('Pagamento criado! Clique no botão azul abaixo para pagar.');
+      }
     } catch (error) {
       console.error('Error creating payment:', error);
       console.error('Error response:', error.response?.data);
@@ -82,6 +119,9 @@ export default function Checkout() {
       </div>
     );
   }
+
+  const displayPrice = couponApplied ? couponApplied.finalPrice : course.price;
+  const hasDiscount = couponApplied && couponApplied.discount > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 py-12" data-testid="checkout-page">
@@ -107,10 +147,71 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {/* Coupon Section */}
+              {!preferenceId && (
+                <div className="border-t border-slate-200 pt-4 mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Cupom de Desconto
+                  </label>
+                  {!couponApplied ? (
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <Input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          placeholder="Digite o código"
+                          className="pl-10"
+                          data-testid="coupon-input"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleValidateCoupon}
+                        disabled={validatingCoupon || !couponCode.trim()}
+                        variant="outline"
+                        data-testid="apply-coupon-btn"
+                      >
+                        {validatingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Aplicar'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        <span className="font-medium text-emerald-800">{couponApplied.code}</span>
+                        <span className="text-sm text-emerald-600">
+                          (-R$ {couponApplied.discount?.toFixed(2)})
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleRemoveCoupon}
+                        className="text-slate-400 hover:text-slate-600"
+                        data-testid="remove-coupon-btn"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="border-t border-slate-200 pt-4">
+                {hasDiscount && (
+                  <div className="flex justify-between items-center text-sm text-slate-500 mb-2">
+                    <span>Subtotal:</span>
+                    <span className="line-through">R$ {course.price.toFixed(2)}</span>
+                  </div>
+                )}
+                {hasDiscount && (
+                  <div className="flex justify-between items-center text-sm text-emerald-600 mb-2">
+                    <span>Desconto:</span>
+                    <span>- R$ {couponApplied.discount?.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-lg font-bold text-violet-600">
                   <span>Total:</span>
-                  <span>R$ {course.price.toFixed(2)}</span>
+                  <span>R$ {displayPrice?.toFixed(2)}</span>
                 </div>
               </div>
             </div>

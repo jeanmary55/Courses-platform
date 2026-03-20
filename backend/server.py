@@ -91,6 +91,7 @@ class Course(BaseModel):
 
 class PaymentCreate(BaseModel):
     courseId: str
+    couponCode: Optional[str] = None
 
 class Payment(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -385,14 +386,65 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
+    # Calculate price (with coupon if provided)
+    original_price = float(course['price'])
+    final_price = original_price
+    discount = 0
+    coupon_code = None
+    
+    if payment_data.couponCode:
+        coupon_code = payment_data.couponCode.upper().strip()
+        coupon = await db.coupons.find_one({"code": coupon_code}, {"_id": 0})
+        
+        if coupon and coupon.get("active", True):
+            # Validate coupon
+            is_valid = True
+            
+            # Check expiration
+            if coupon.get("expiresAt"):
+                expires = datetime.fromisoformat(coupon["expiresAt"].replace("Z", "+00:00"))
+                if datetime.now(timezone.utc) > expires:
+                    is_valid = False
+            
+            # Check max uses
+            if coupon.get("maxUses") is not None and coupon.get("currentUses", 0) >= coupon["maxUses"]:
+                is_valid = False
+            
+            # Check specific user
+            if coupon.get("specificUserId") and coupon["specificUserId"] != user_id:
+                is_valid = False
+            
+            # Check specific course
+            if coupon.get("specificCourseId") and coupon["specificCourseId"] != payment_data.courseId:
+                is_valid = False
+            
+            # Check min purchase amount
+            if coupon.get("minPurchaseAmount") and original_price < coupon["minPurchaseAmount"]:
+                is_valid = False
+            
+            if is_valid:
+                # Calculate discount
+                if coupon["discountType"] == "percentage":
+                    discount = original_price * (coupon["discountValue"] / 100)
+                else:  # fixed
+                    discount = min(coupon["discountValue"], original_price)
+                
+                final_price = max(0.01, original_price - discount)  # Mercado Pago min is 0.01
+                
+                # Increment coupon usage
+                await db.coupons.update_one(
+                    {"code": coupon_code},
+                    {"$inc": {"currentUses": 1}}
+                )
+    
     # Create payment preference
     preference_data = {
         "items": [
             {
                 "title": course['title'],
-                "description": course['description'],
+                "description": f"{course['description']}" + (f" (Cupom: {coupon_code})" if coupon_code and discount > 0 else ""),
                 "quantity": 1,
-                "unit_price": float(course['price']),
+                "unit_price": round(final_price, 2),
                 "currency_id": "BRL"
             }
         ],
@@ -432,7 +484,10 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
             "courseId": payment_data.courseId,
             "mercadopagoId": preference["id"],
             "status": "pending",
-            "amount": float(course['price']),
+            "amount": round(final_price, 2),
+            "originalAmount": original_price,
+            "discount": round(discount, 2),
+            "couponCode": coupon_code if discount > 0 else None,
             "createdAt": datetime.now(timezone.utc).isoformat()
         }
         
@@ -440,7 +495,11 @@ async def create_payment_preference(payment_data: PaymentCreate, user_id: str = 
         
         return {
             "preferenceId": preference["id"],
-            "initPoint": preference["init_point"]
+            "initPoint": preference["init_point"],
+            "originalPrice": original_price,
+            "discount": round(discount, 2),
+            "finalPrice": round(final_price, 2),
+            "couponApplied": coupon_code if discount > 0 else None
         }
         
     except Exception as e:
@@ -914,6 +973,181 @@ async def revoke_course_access(data: GrantAccessRequest, admin: str = Depends(ve
     )
     
     return {"success": True, "message": "Acesso ao curso revogado com sucesso"}
+
+# ==================== Coupon System ====================
+
+class CouponCreate(BaseModel):
+    code: str
+    discountType: str  # 'percentage' or 'fixed'
+    discountValue: float  # percentage (0-100) or fixed amount in BRL
+    maxUses: Optional[int] = None  # None = unlimited
+    expiresAt: Optional[str] = None  # ISO date string
+    specificUserId: Optional[str] = None  # If set, only this user can use it
+    specificCourseId: Optional[str] = None  # If set, only for this course
+    minPurchaseAmount: Optional[float] = None
+    active: bool = True
+
+class CouponUpdate(BaseModel):
+    discountType: Optional[str] = None
+    discountValue: Optional[float] = None
+    maxUses: Optional[int] = None
+    expiresAt: Optional[str] = None
+    specificUserId: Optional[str] = None
+    specificCourseId: Optional[str] = None
+    minPurchaseAmount: Optional[float] = None
+    active: Optional[bool] = None
+
+class ApplyCoupon(BaseModel):
+    code: str
+    courseId: str
+
+@api_router.get("/admin/coupons")
+async def get_all_coupons(admin: str = Depends(verify_admin)):
+    """Get all coupons (admin only)"""
+    coupons = await db.coupons.find({}, {"_id": 0}).to_list(1000)
+    return coupons
+
+@api_router.post("/admin/coupons")
+async def create_coupon(coupon_data: CouponCreate, admin: str = Depends(verify_admin)):
+    """Create a new coupon (admin only)"""
+    # Normalize code to uppercase
+    code = coupon_data.code.upper().strip()
+    
+    # Check if code already exists
+    existing = await db.coupons.find_one({"code": code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Código de cupom já existe")
+    
+    # Validate discount
+    if coupon_data.discountType == 'percentage' and (coupon_data.discountValue < 0 or coupon_data.discountValue > 100):
+        raise HTTPException(status_code=400, detail="Desconto percentual deve ser entre 0 e 100")
+    
+    if coupon_data.discountType == 'fixed' and coupon_data.discountValue < 0:
+        raise HTTPException(status_code=400, detail="Desconto fixo deve ser positivo")
+    
+    coupon_id = str(uuid.uuid4())
+    coupon_doc = {
+        "id": coupon_id,
+        "code": code,
+        "discountType": coupon_data.discountType,
+        "discountValue": coupon_data.discountValue,
+        "maxUses": coupon_data.maxUses,
+        "currentUses": 0,
+        "expiresAt": coupon_data.expiresAt,
+        "specificUserId": coupon_data.specificUserId,
+        "specificCourseId": coupon_data.specificCourseId,
+        "minPurchaseAmount": coupon_data.minPurchaseAmount,
+        "active": coupon_data.active,
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.coupons.insert_one(coupon_doc)
+    return {"success": True, "couponId": coupon_id, "code": code, "message": "Cupom criado com sucesso"}
+
+@api_router.put("/admin/coupons/{coupon_id}")
+async def update_coupon(coupon_id: str, coupon_data: CouponUpdate, admin: str = Depends(verify_admin)):
+    """Update a coupon (admin only)"""
+    update_data = {}
+    
+    if coupon_data.discountType is not None:
+        update_data["discountType"] = coupon_data.discountType
+    if coupon_data.discountValue is not None:
+        update_data["discountValue"] = coupon_data.discountValue
+    if coupon_data.maxUses is not None:
+        update_data["maxUses"] = coupon_data.maxUses
+    if coupon_data.expiresAt is not None:
+        update_data["expiresAt"] = coupon_data.expiresAt
+    if coupon_data.specificUserId is not None:
+        update_data["specificUserId"] = coupon_data.specificUserId
+    if coupon_data.specificCourseId is not None:
+        update_data["specificCourseId"] = coupon_data.specificCourseId
+    if coupon_data.minPurchaseAmount is not None:
+        update_data["minPurchaseAmount"] = coupon_data.minPurchaseAmount
+    if coupon_data.active is not None:
+        update_data["active"] = coupon_data.active
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+    
+    update_data["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    
+    result = await db.coupons.update_one({"id": coupon_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Cupom não encontrado")
+    
+    return {"success": True, "message": "Cupom atualizado com sucesso"}
+
+@api_router.delete("/admin/coupons/{coupon_id}")
+async def delete_coupon(coupon_id: str, admin: str = Depends(verify_admin)):
+    """Delete a coupon (admin only)"""
+    result = await db.coupons.delete_one({"id": coupon_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cupom não encontrado")
+    
+    return {"success": True, "message": "Cupom deletado com sucesso"}
+
+@api_router.post("/coupons/validate")
+async def validate_coupon(data: ApplyCoupon, user_id: str = Depends(get_current_user)):
+    """Validate and calculate discount for a coupon"""
+    code = data.code.upper().strip()
+    
+    # Find coupon
+    coupon = await db.coupons.find_one({"code": code}, {"_id": 0})
+    if not coupon:
+        raise HTTPException(status_code=404, detail="Cupom não encontrado")
+    
+    # Check if active
+    if not coupon.get("active", True):
+        raise HTTPException(status_code=400, detail="Este cupom está inativo")
+    
+    # Check expiration
+    if coupon.get("expiresAt"):
+        expires = datetime.fromisoformat(coupon["expiresAt"].replace("Z", "+00:00"))
+        if datetime.now(timezone.utc) > expires:
+            raise HTTPException(status_code=400, detail="Este cupom expirou")
+    
+    # Check max uses
+    if coupon.get("maxUses") is not None:
+        if coupon.get("currentUses", 0) >= coupon["maxUses"]:
+            raise HTTPException(status_code=400, detail="Este cupom atingiu o limite de usos")
+    
+    # Check specific user
+    if coupon.get("specificUserId") and coupon["specificUserId"] != user_id:
+        raise HTTPException(status_code=400, detail="Este cupom não está disponível para você")
+    
+    # Check specific course
+    if coupon.get("specificCourseId") and coupon["specificCourseId"] != data.courseId:
+        raise HTTPException(status_code=400, detail="Este cupom não é válido para este curso")
+    
+    # Get course price
+    course = await get_course_by_id(data.courseId)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    original_price = course["price"]
+    
+    # Check minimum purchase amount
+    if coupon.get("minPurchaseAmount") and original_price < coupon["minPurchaseAmount"]:
+        raise HTTPException(status_code=400, detail=f"Valor mínimo de compra: R$ {coupon['minPurchaseAmount']:.2f}")
+    
+    # Calculate discount
+    if coupon["discountType"] == "percentage":
+        discount = original_price * (coupon["discountValue"] / 100)
+    else:  # fixed
+        discount = min(coupon["discountValue"], original_price)  # Discount can't exceed price
+    
+    final_price = max(0, original_price - discount)
+    
+    return {
+        "valid": True,
+        "code": code,
+        "discountType": coupon["discountType"],
+        "discountValue": coupon["discountValue"],
+        "originalPrice": original_price,
+        "discount": round(discount, 2),
+        "finalPrice": round(final_price, 2),
+        "message": f"Cupom aplicado! Desconto de R$ {discount:.2f}"
+    }
 
 # Include the router in the main app
 app.include_router(api_router)
