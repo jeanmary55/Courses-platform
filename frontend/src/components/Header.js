@@ -46,17 +46,12 @@ export const Header = () => {
                 {t('myCourses')}
               </Link>
             )}
-            <a 
-              href="https://jeanmaryshalomboot.streamlit.app" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <Link 
+              to="/about" 
               className="text-slate-700 hover:text-violet-600 transition-colors"
               data-testid="nav-about"
             >
               {t('about')}
-            </a>
-            <Link to="/admin-login" className="text-slate-700 hover:text-violet-600 transition-colors" data-testid="nav-admin">
-              Admin
             </Link>
           </nav>
 

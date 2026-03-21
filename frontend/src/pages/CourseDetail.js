@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslatedCourses } from '../hooks/useTranslatedCourses';
 import { Button } from '../components/ui/button';
-import { Book, Clock, Play, FileText, Download, CheckCircle2 } from 'lucide-react';
+import { Book, Clock, Play, FileText, Download, CheckCircle2, MessageCircle, Send, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -16,7 +16,11 @@ export default function CourseDetail() {
   const [course, setCourse] = useState(null);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, user } = useAuth();
+  const [activeTab, setActiveTab] = useState('content');
+  const [questions, setQuestions] = useState([]);
+  const [newQuestion, setNewQuestion] = useState('');
+  const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const { isAuthenticated, user, token } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -25,6 +29,7 @@ export default function CourseDetail() {
 
   useEffect(() => {
     fetchCourse();
+    fetchQuestions();
   }, [courseId]);
 
   const fetchCourse = async () => {
@@ -39,6 +44,37 @@ export default function CourseDetail() {
       toast.error(t('error'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      const response = await axios.get(`${API}/courses/${courseId}/questions`);
+      setQuestions(response.data);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+    }
+  };
+
+  const handleSubmitQuestion = async (e) => {
+    e.preventDefault();
+    if (!newQuestion.trim()) return;
+    
+    setSubmittingQuestion(true);
+    try {
+      await axios.post(
+        `${API}/courses/${courseId}/questions`,
+        { courseId, question: newQuestion },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNewQuestion('');
+      fetchQuestions();
+      toast.success('Pergunta enviada com sucesso!');
+    } catch (error) {
+      console.error('Error submitting question:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao enviar pergunta');
+    } finally {
+      setSubmittingQuestion(false);
     }
   };
 
@@ -146,15 +182,121 @@ export default function CourseDetail() {
                 {isPurchased && (
                   <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-full flex items-center gap-1">
                     <CheckCircle2 className="w-4 h-4" />
-                    Você possui este curso
+                    Voce possui este curso
                   </span>
                 )}
               </div>
 
-              <div className="prose max-w-none">
-                <h2 className="text-2xl font-semibold mb-4">{t('aboutCourse')}</h2>
-                <p className="text-slate-600 text-lg leading-relaxed">{translatedCourse.description}</p>
-              </div>
+              {/* Tabs for Content and Questions */}
+              {isPurchased && (
+                <div className="flex border-b border-slate-200 mb-6">
+                  <button
+                    onClick={() => setActiveTab('content')}
+                    className={`px-6 py-3 font-medium transition-colors ${
+                      activeTab === 'content'
+                        ? 'text-violet-600 border-b-2 border-violet-600'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    data-testid="tab-content"
+                  >
+                    {t('aboutCourse')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('questions')}
+                    className={`px-6 py-3 font-medium transition-colors flex items-center gap-2 ${
+                      activeTab === 'questions'
+                        ? 'text-violet-600 border-b-2 border-violet-600'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    data-testid="tab-questions"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {t('questionsTab')} ({questions.length})
+                  </button>
+                </div>
+              )}
+
+              {/* Content Tab */}
+              {(activeTab === 'content' || !isPurchased) && (
+                <div className="prose max-w-none">
+                  <h2 className="text-2xl font-semibold mb-4">{t('aboutCourse')}</h2>
+                  <p className="text-slate-600 text-lg leading-relaxed">{translatedCourse.description}</p>
+                </div>
+              )}
+
+              {/* Questions Tab */}
+              {activeTab === 'questions' && isPurchased && (
+                <div data-testid="questions-section">
+                  {/* Ask Question Form */}
+                  <form onSubmit={handleSubmitQuestion} className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4">{t('askQuestion')}</h3>
+                    <div className="flex gap-3">
+                      <textarea
+                        value={newQuestion}
+                        onChange={(e) => setNewQuestion(e.target.value)}
+                        placeholder={t('yourQuestion')}
+                        className="flex-1 p-4 border border-slate-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent resize-none"
+                        rows={3}
+                        data-testid="question-input"
+                      />
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        type="submit"
+                        disabled={submittingQuestion || !newQuestion.trim()}
+                        className="bg-violet-600 hover:bg-violet-700 gap-2"
+                        data-testid="submit-question-btn"
+                      >
+                        <Send className="w-4 h-4" />
+                        {t('submitQuestion')}
+                      </Button>
+                    </div>
+                  </form>
+
+                  {/* Questions List */}
+                  <div className="space-y-6">
+                    {questions.length === 0 ? (
+                      <p className="text-center text-slate-500 py-8">{t('noQuestions')}</p>
+                    ) : (
+                      questions.map((q) => (
+                        <div key={q.id} className="bg-slate-50 rounded-xl p-6 border border-slate-200" data-testid={`question-${q.id}`}>
+                          {/* Question */}
+                          <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
+                                <User className="w-4 h-4 text-violet-600" />
+                              </div>
+                              <span className="font-medium text-slate-700">{q.userName}</span>
+                              <span className="text-xs text-slate-400">
+                                {new Date(q.createdAt).toLocaleDateString('pt-BR')}
+                              </span>
+                            </div>
+                            <p className="text-slate-800 pl-10">{q.question}</p>
+                          </div>
+
+                          {/* Answer */}
+                          {q.answer ? (
+                            <div className="ml-10 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <span className="font-medium text-emerald-700">{t('answeredBy')} {q.answeredBy}</span>
+                                <span className="text-xs text-slate-400">
+                                  {new Date(q.answeredAt).toLocaleDateString('pt-BR')}
+                                </span>
+                              </div>
+                              <p className="text-slate-700">{q.answer}</p>
+                            </div>
+                          ) : (
+                            <div className="ml-10 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                              <p className="text-amber-700 italic">{t('pendingAnswer')}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -168,7 +310,7 @@ export default function CourseDetail() {
                     <div className="text-4xl font-bold text-violet-600 mb-2">
                       R$ {translatedCourse.price?.toFixed(2)}
                     </div>
-                    <p className="text-slate-600 text-sm">Acesso vitalício</p>
+                    <p className="text-slate-600 text-sm">Acesso vitalicio</p>
                   </div>
                   <Button 
                     onClick={handleBuyNow} 
@@ -185,7 +327,7 @@ export default function CourseDetail() {
                 <h3 className="text-xl font-semibold mb-4">{t('courseContent')}</h3>
                 {lessonsCount === 0 ? (
                   <p className="text-slate-500 text-center py-8">
-                    Conteúdo em breve...
+                    Conteudo em breve...
                   </p>
                 ) : (
                   <div className="space-y-2">

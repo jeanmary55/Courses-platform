@@ -13,6 +13,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentPending from './pages/PaymentPending';
 import PaymentFailure from './pages/PaymentFailure';
 import MyCourses from './pages/MyCourses';
+import About from './pages/About';
 import AdminLogin from './pages/AdminLogin';
 import AdminPanel from './pages/AdminPanel';
 import '@/App.css';
@@ -34,6 +35,7 @@ function App() {
               <Route path="/payment-pending" element={<PaymentPending />} />
               <Route path="/payment-failure" element={<PaymentFailure />} />
               <Route path="/my-courses" element={<MyCourses />} />
+              <Route path="/about" element={<About />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminPanel />} />
             </Routes>

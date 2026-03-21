@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Users, DollarSign, ShoppingCart, Clock, Search, LogOut, BookOpen, Plus, Trash2, Eye, EyeOff, Edit, Gift, X, Tag, Percent } from 'lucide-react';
+import { Users, DollarSign, ShoppingCart, Clock, Search, LogOut, BookOpen, Plus, Trash2, Eye, EyeOff, Edit, Gift, X, Tag, Percent, MessageCircle, Send, Mail } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -14,6 +14,7 @@ export default function AdminPanel() {
   const [payments, setPayments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [coupons, setCoupons] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +25,9 @@ export default function AdminPanel() {
   const [showEditCourse, setShowEditCourse] = useState(false);
   const [showGrantAccess, setShowGrantAccess] = useState(false);
   const [showAddCoupon, setShowAddCoupon] = useState(false);
+  const [showAnswerModal, setShowAnswerModal] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState(null);
+  const [answerText, setAnswerText] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingCourse, setEditingCourse] = useState(null);
   const [lessonForm, setLessonForm] = useState({
@@ -78,12 +82,13 @@ export default function AdminPanel() {
     try {
       const headers = getHeaders();
 
-      const [statsRes, usersRes, paymentsRes, coursesRes, couponsRes] = await Promise.all([
+      const [statsRes, usersRes, paymentsRes, coursesRes, couponsRes, questionsRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers }),
         axios.get(`${API}/admin/users`, { headers }),
         axios.get(`${API}/admin/payments`, { headers }),
         axios.get(`${API}/admin/courses`, { headers }),
-        axios.get(`${API}/admin/coupons`, { headers }).catch(() => ({ data: [] }))
+        axios.get(`${API}/admin/coupons`, { headers }).catch(() => ({ data: [] })),
+        axios.get(`${API}/admin/questions`, { headers }).catch(() => ({ data: [] }))
       ]);
 
       setStats(statsRes.data);
@@ -91,6 +96,7 @@ export default function AdminPanel() {
       setPayments(paymentsRes.data);
       setCourses(coursesRes.data);
       setCoupons(couponsRes.data);
+      setQuestions(questionsRes.data);
       
       if (coursesRes.data.length > 0 && !selectedCourse) {
         setSelectedCourse(coursesRes.data[0].id);
@@ -329,6 +335,55 @@ export default function AdminPanel() {
     }
   };
 
+  // Questions Management Functions
+  const handleAnswerQuestion = async (e) => {
+    e.preventDefault();
+    if (!answerText.trim() || !selectedQuestion) return;
+    
+    try {
+      await axios.put(`${API}/admin/questions/${selectedQuestion.id}/answer`, {
+        answer: answerText
+      }, { headers: getHeaders() });
+      setShowAnswerModal(false);
+      setSelectedQuestion(null);
+      setAnswerText('');
+      fetchData();
+      alert('Resposta enviada com sucesso!');
+    } catch (error) {
+      console.error('Error answering question:', error);
+      alert('Erro ao enviar resposta');
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId) => {
+    if (!window.confirm('Tem certeza que deseja deletar esta pergunta?')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/questions/${questionId}`, { headers: getHeaders() });
+      fetchData();
+      alert('Pergunta deletada com sucesso!');
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      alert('Erro ao deletar pergunta');
+    }
+  };
+
+  const handleSendEmailQuestion = async (question) => {
+    const message = window.prompt('Digite a mensagem para enviar por email:');
+    if (!message) return;
+    
+    try {
+      await axios.post(`${API}/admin/questions/send-email`, {
+        questionId: question.id,
+        message: message
+      }, { headers: getHeaders() });
+      alert(`Email enviado para ${question.userEmail}`);
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Erro ao enviar email (integração precisa ser configurada)');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminEmail');
@@ -350,6 +405,14 @@ export default function AdminPanel() {
     course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     course.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredQuestions = questions.filter(q =>
+    q.question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    q.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    q.courseTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const pendingQuestions = questions.filter(q => !q.answer);
 
   if (loading) {
     return (
@@ -448,6 +511,20 @@ export default function AdminPanel() {
             }`}
           >
             Cupons ({coupons.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('questions')}
+            data-testid="tab-questions"
+            className={`px-6 py-3 font-medium transition-colors flex items-center gap-2 ${
+              activeTab === 'questions'
+                ? 'text-violet-600 border-b-2 border-violet-600'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <MessageCircle className="w-4 h-4" />
+            Duvidas {pendingQuestions.length > 0 && (
+              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{pendingQuestions.length}</span>
+            )}
           </button>
         </div>
 
@@ -1389,6 +1466,136 @@ export default function AdminPanel() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Questions Tab */}
+        {activeTab === 'questions' && (
+          <div data-testid="questions-tab">
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="Buscar pergunta..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="search-questions"
+                />
+              </div>
+            </div>
+
+            {/* Answer Modal */}
+            {showAnswerModal && selectedQuestion && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-semibold">Responder Pergunta</h3>
+                      <button onClick={() => { setShowAnswerModal(false); setSelectedQuestion(null); setAnswerText(''); }} className="text-slate-400 hover:text-slate-600">
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <div className="mb-4 p-4 bg-slate-50 rounded-lg">
+                      <p className="text-sm text-slate-500 mb-1">Pergunta de {selectedQuestion.userName}:</p>
+                      <p className="text-slate-800">{selectedQuestion.question}</p>
+                      <p className="text-xs text-slate-400 mt-2">Curso: {selectedQuestion.courseTitle}</p>
+                    </div>
+                    <form onSubmit={handleAnswerQuestion} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Sua Resposta</label>
+                        <textarea
+                          value={answerText}
+                          onChange={(e) => setAnswerText(e.target.value)}
+                          placeholder="Escreva sua resposta..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg min-h-[120px]"
+                          required
+                          data-testid="answer-textarea"
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 gap-2" data-testid="submit-answer-btn">
+                          <Send className="w-4 h-4" />
+                          Enviar Resposta
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => { setShowAnswerModal(false); setSelectedQuestion(null); setAnswerText(''); }}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Questions List */}
+            <div className="space-y-4">
+              {filteredQuestions.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-12 text-center text-slate-500">
+                  Nenhuma pergunta ainda.
+                </div>
+              ) : (
+                filteredQuestions.map((question) => (
+                  <div key={question.id} className={`bg-white rounded-xl shadow-lg border ${question.answer ? 'border-slate-100' : 'border-amber-200'} p-6`} data-testid={`admin-question-${question.id}`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium text-slate-900">{question.userName}</span>
+                          <span className="text-slate-400">-</span>
+                          <span className="text-sm text-slate-500">{question.userEmail}</span>
+                          <span className="text-slate-400">-</span>
+                          <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded">{question.courseTitle}</span>
+                        </div>
+                        <p className="text-slate-800 mb-2">{question.question}</p>
+                        <p className="text-xs text-slate-400">{new Date(question.createdAt).toLocaleString('pt-BR')}</p>
+                        
+                        {question.answer && (
+                          <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                            <p className="text-sm font-medium text-emerald-700 mb-1">Resposta:</p>
+                            <p className="text-slate-700">{question.answer}</p>
+                            <p className="text-xs text-slate-400 mt-2">Respondido em {new Date(question.answeredAt).toLocaleString('pt-BR')}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {!question.answer && (
+                          <Button
+                            onClick={() => { setSelectedQuestion(question); setShowAnswerModal(true); }}
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                            data-testid={`answer-question-${question.id}`}
+                          >
+                            <Send className="w-3 h-3" />
+                            Responder
+                          </Button>
+                        )}
+                        <Button
+                          onClick={() => handleSendEmailQuestion(question)}
+                          size="sm"
+                          variant="outline"
+                          className="gap-1"
+                          data-testid={`email-question-${question.id}`}
+                        >
+                          <Mail className="w-3 h-3" />
+                          Email
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:bg-red-50 gap-1"
+                          data-testid={`delete-question-${question.id}`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Deletar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

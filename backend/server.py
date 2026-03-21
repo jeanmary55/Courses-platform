@@ -1149,6 +1149,130 @@ async def validate_coupon(data: ApplyCoupon, user_id: str = Depends(get_current_
         "message": f"Cupom aplicado! Desconto de R$ {discount:.2f}"
     }
 
+# ==================== Questions/Doubts System ====================
+
+class QuestionCreate(BaseModel):
+    courseId: str
+    question: str
+
+class AnswerCreate(BaseModel):
+    answer: str
+
+@api_router.get("/courses/{course_id}/questions")
+async def get_course_questions(course_id: str):
+    """Get all questions for a course (visible to everyone)"""
+    questions = await db.questions.find(
+        {"courseId": course_id},
+        {"_id": 0}
+    ).sort("createdAt", -1).to_list(1000)
+    
+    # Enrich with user info
+    for question in questions:
+        user = await db.users.find_one({"id": question["userId"]}, {"_id": 0, "password_hash": 0})
+        if user:
+            question["userName"] = f"{user.get('firstName', '')} {user.get('lastName', '')}"
+    
+    return questions
+
+@api_router.post("/courses/{course_id}/questions")
+async def create_question(course_id: str, data: QuestionCreate, user_id: str = Depends(get_current_user)):
+    """Create a new question for a course"""
+    # Verify course exists
+    course = await get_course_by_id(course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Curso não encontrado")
+    
+    # Verify user has purchased the course
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user or course_id not in user.get("purchasedCourses", []):
+        raise HTTPException(status_code=403, detail="Você precisa ter comprado o curso para fazer perguntas")
+    
+    question_id = str(uuid.uuid4())
+    question_doc = {
+        "id": question_id,
+        "courseId": course_id,
+        "userId": user_id,
+        "question": data.question,
+        "answer": None,
+        "answeredBy": None,
+        "answeredAt": None,
+        "createdAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.questions.insert_one(question_doc)
+    
+    return {"success": True, "questionId": question_id, "message": "Pergunta enviada com sucesso"}
+
+@api_router.put("/admin/questions/{question_id}/answer")
+async def answer_question(question_id: str, data: AnswerCreate, admin: str = Depends(verify_admin)):
+    """Answer a question (admin only)"""
+    result = await db.questions.update_one(
+        {"id": question_id},
+        {"$set": {
+            "answer": data.answer,
+            "answeredBy": "Admin",
+            "answeredAt": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    
+    return {"success": True, "message": "Resposta enviada com sucesso"}
+
+@api_router.delete("/admin/questions/{question_id}")
+async def delete_question(question_id: str, admin: str = Depends(verify_admin)):
+    """Delete a question (admin only)"""
+    result = await db.questions.delete_one({"id": question_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    
+    return {"success": True, "message": "Pergunta deletada com sucesso"}
+
+@api_router.get("/admin/questions")
+async def get_all_questions(admin: str = Depends(verify_admin)):
+    """Get all questions from all courses (admin only)"""
+    questions = await db.questions.find({}, {"_id": 0}).sort("createdAt", -1).to_list(1000)
+    
+    # Enrich with user and course info
+    for question in questions:
+        user = await db.users.find_one({"id": question["userId"]}, {"_id": 0, "password_hash": 0})
+        if user:
+            question["userName"] = f"{user.get('firstName', '')} {user.get('lastName', '')}"
+            question["userEmail"] = user.get("email", "")
+        
+        course = await get_course_by_id(question["courseId"])
+        if course:
+            question["courseTitle"] = course.get("title", "")
+    
+    return questions
+
+class EmailQuestionRequest(BaseModel):
+    questionId: str
+    message: str
+
+@api_router.post("/admin/questions/send-email")
+async def send_question_email(data: EmailQuestionRequest, admin: str = Depends(verify_admin)):
+    """Send an email response to a question (admin only) - placeholder for email integration"""
+    question = await db.questions.find_one({"id": data.questionId}, {"_id": 0})
+    if not question:
+        raise HTTPException(status_code=404, detail="Pergunta não encontrada")
+    
+    user = await db.users.find_one({"id": question["userId"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Here you would integrate with an email service
+    # For now, we just log and return success
+    logger.info(f"Email would be sent to {user.get('email')} with message: {data.message}")
+    
+    return {
+        "success": True, 
+        "message": f"Email enviado para {user.get('email')}",
+        "note": "Integração de email precisa ser configurada"
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 

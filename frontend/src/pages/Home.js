@@ -162,7 +162,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 text-center text-slate-400">
-            <p>© 2024 Shalom Learning. {t('allRightsReserved')}</p>
+            <p>&copy; {new Date().getFullYear()} Shalom Learning. {t('allRightsReserved')}</p>
           </div>
         </div>
       </footer>
