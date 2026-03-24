@@ -23,26 +23,29 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-emerald-50 py-12" data-testid="about-page">
-      <div className="container mx-auto px-6 md:px-12 max-w-5xl">
+      <div className="container mx-auto px-4 md:px-12 max-w-5xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">{t('aboutTitle')}</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">{t('aboutTitle')}</h1>
         </div>
 
         {/* Profile Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-12 mb-8">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
             {/* Profile Image */}
             <div className="flex-shrink-0">
-              <div className="w-48 h-48 rounded-full bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center text-white text-6xl font-bold shadow-lg">
-                JM
-              </div>
+              <img 
+                src="https://customer-assets.emergentagent.com/job_5ff8a42a-e0e5-4c10-8228-f799233447fb/artifacts/268d3ijd_CEO%20Jean.jpeg"
+                alt="Jean Mary Jeanlus"
+                className="w-48 h-48 rounded-full object-cover shadow-lg border-4 border-violet-100"
+                data-testid="admin-photo"
+              />
             </div>
 
             {/* Profile Info */}
             <div className="flex-1 text-center md:text-left">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">{t('aboutName')}</h2>
-              <p className="text-xl text-violet-600 font-medium mb-4 flex items-center justify-center md:justify-start gap-2">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">{t('aboutName')}</h2>
+              <p className="text-lg md:text-xl text-violet-600 font-medium mb-4 flex items-center justify-center md:justify-start gap-2">
                 <Code className="w-5 h-5" />
                 {t('aboutRole')}
               </p>
@@ -68,13 +71,13 @@ export default function About() {
         </div>
 
         {/* Bio Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-12 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <GraduationCap className="w-8 h-8 text-violet-600" />
-            <h3 className="text-2xl font-bold text-slate-900">Biografia</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900">Biografia</h3>
           </div>
           
-          <div className="space-y-4 text-slate-600 leading-relaxed">
+          <div className="space-y-4 text-slate-600 leading-relaxed text-sm md:text-base">
             <p>{t('aboutBio')}</p>
             <p>{t('aboutLanguages')}</p>
             <p>{t('aboutWork')}</p>
@@ -83,10 +86,10 @@ export default function About() {
         </div>
 
         {/* Skills Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-12 mb-8">
           <div className="flex items-center gap-3 mb-6">
             <Database className="w-8 h-8 text-emerald-600" />
-            <h3 className="text-2xl font-bold text-slate-900">{t('skills')}</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900">{t('skills')}</h3>
           </div>
           
           <div className="grid md:grid-cols-2 gap-6">
@@ -108,10 +111,10 @@ export default function About() {
         </div>
 
         {/* Languages Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-12">
           <div className="flex items-center gap-3 mb-6">
             <Globe className="w-8 h-8 text-blue-600" />
-            <h3 className="text-2xl font-bold text-slate-900">{t('languagesSpoken')}</h3>
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900">{t('languagesSpoken')}</h3>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -126,7 +129,7 @@ export default function About() {
                   {lang.flag === 'EN' && '🇺🇸'}
                   {lang.flag === 'PT' && '🇧🇷'}
                 </div>
-                <span className="font-medium text-slate-700">{lang.name}</span>
+                <span className="font-medium text-slate-700 text-sm">{lang.name}</span>
               </div>
             ))}
           </div>

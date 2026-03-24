@@ -2,11 +2,11 @@ export const coursesTranslations = {
   pt: {
     'python-basics': {
       title: 'Python para Iniciantes',
-      description: 'Aprenda Python do zero ao avançado com 20 aulas práticas'
+      description: 'Aprenda Python do zero ao avancado com 20 aulas praticas'
     },
     'excel-mastery': {
       title: 'Excel Completo',
-      description: 'Domine Excel com fórmulas, tabelas dinâmicas e muito mais'
+      description: 'Domine Excel com formulas, tabelas dinamicas e muito mais'
     },
     'sql-database': {
       title: 'SQL e Bancos de Dados',
@@ -18,27 +18,27 @@ export const coursesTranslations = {
     },
     'html-css': {
       title: 'HTML & CSS',
-      description: 'Crie sites incríveis com HTML5 e CSS3'
+      description: 'Crie sites incriveis com HTML5 e CSS3'
     },
     'javascript-modern': {
       title: 'JavaScript Moderno',
-      description: 'Programação web com JavaScript ES6+'
+      description: 'Programacao web com JavaScript ES6+'
     },
     'french-course': {
-      title: 'Francês Completo',
-      description: 'Aprenda francês do básico ao avançado'
+      title: 'Frances Completo',
+      description: 'Aprenda frances do basico ao avancado'
     },
     'portuguese-course': {
-      title: 'Português Avançado',
-      description: 'Gramática e redação em português'
+      title: 'Portugues Avancado',
+      description: 'Gramatica e redacao em portugues'
     },
     'english-course': {
-      title: 'Inglês do Zero',
-      description: 'Inglês do básico ao fluente'
+      title: 'Ingles do Zero',
+      description: 'Ingles do basico ao fluente'
     },
     'spanish-course': {
-      title: 'Espanhol Rápido',
-      description: 'Aprenda espanhol de forma rápida e prática'
+      title: 'Espanhol Rapido',
+      description: 'Aprenda espanhol de forma rapida e pratica'
     }
   },
   en: {
@@ -122,7 +122,7 @@ export const coursesTranslations = {
     },
     'spanish-course': {
       title: 'Espagnol Rapide',
-      description: 'Apprenez l\'espagnol rapidement et pratiquement'
+      description: 'Apprenez espagnol rapidement et pratiquement'
     }
   },
   es: {
@@ -237,11 +237,13 @@ export const translations = {
     lessons: 'aulas',
     buyNow: 'Comprar Agora',
     viewCourse: 'Ver Curso',
+    accessCourse: 'Acessar Curso',
+    accessFor1Year: 'Acesso por 1 ano',
     
     // Why Choose Us
     whyChooseUs: 'Por que escolher a Shalom Learning?',
     feature1Title: 'Aprenda no seu ritmo',
-    feature1Desc: 'Acesso vitalicio aos cursos',
+    feature1Desc: 'Acesso por 1 ano aos cursos',
     feature2Title: 'Conteudo de qualidade',
     feature2Desc: 'Aulas praticas e objetivas',
     feature3Title: 'Suporte dedicado',
@@ -250,15 +252,19 @@ export const translations = {
     // FAQ
     faqTitle: 'Perguntas Frequentes',
     faq1Q: 'Como funciona o acesso aos cursos?',
-    faq1A: 'Apos a confirmacao do pagamento, voce tera acesso vitalicio ao curso adquirido.',
+    faq1A: 'Apos a confirmacao do pagamento, voce tera acesso por 1 ano ao curso adquirido.',
     faq2Q: 'Posso assistir as aulas quantas vezes quiser?',
-    faq2A: 'Sim! Voce pode assistir todas as aulas quantas vezes quiser, sem limite de tempo.',
+    faq2A: 'Sim! Voce pode assistir todas as aulas quantas vezes quiser durante o periodo de acesso.',
     faq3Q: 'Como e feito o pagamento?',
     faq3A: 'Aceitamos pagamento via PIX, cartao de credito, debito e boleto atraves do Mercado Pago.',
     faq4Q: 'Os cursos tem certificado?',
     faq4A: 'Sim, apos concluir todas as aulas do curso, voce recebera um certificado de conclusao.',
     faq5Q: 'Preciso de conhecimento previo?',
     faq5A: 'Nao! Nossos cursos sao desenvolvidos para iniciantes, partindo do zero.',
+    faq6Q: 'Qual e a politica de reembolso?',
+    faq6A: 'Voce pode solicitar reembolso em ate 14 dias apos a compra, caso nao esteja satisfeito. Se voce ja tiver assistido 5 aulas ou mais, o reembolso so sera possivel em caso de problemas tecnicos.',
+    faq7Q: 'Posso acessar o curso pelo celular?',
+    faq7A: 'Sim! Voce pode acessar o curso pelo celular, tablet ou computador. Basta ter acesso a internet.',
     
     // Footer
     contact: 'Contato',
@@ -276,6 +282,16 @@ export const translations = {
     createAccount: 'Criar Conta',
     loginTitle: 'Entrar na sua conta',
     signupTitle: 'Criar nova conta',
+    forgotPassword: 'Esqueceu a senha?',
+    resetPassword: 'Redefinir Senha',
+    resetPasswordTitle: 'Esqueceu sua senha?',
+    resetPasswordDesc: 'Digite seu email para receber um link de redefinicao.',
+    sendResetLink: 'Enviar Link',
+    resetLinkSent: 'Link enviado! Verifique seu email.',
+    newPassword: 'Nova Senha',
+    confirmNewPassword: 'Confirmar Nova Senha',
+    passwordReset: 'Senha redefinida com sucesso!',
+    backToLogin: 'Voltar para Login',
     
     // Course Detail
     courseContent: 'Conteudo do Curso',
@@ -301,25 +317,8 @@ export const translations = {
     checkout: 'Finalizar Compra',
     paymentMethod: 'Metodo de Pagamento',
     pixPayment: 'Pagamento via PIX',
-    step1: 'Passo 1: Realize o pagamento',
-    step1Desc: 'Escaneie o QR Code ou copie o codigo PIX abaixo',
-    copyCode: 'Copiar Codigo',
-    codeCopied: 'Codigo copiado!',
-    step2: 'Passo 2: Envie o comprovante',
-    step2Desc: 'Apos realizar o pagamento, envie uma foto do comprovante',
-    uploadReceipt: 'Enviar Comprovante',
-    selectFile: 'Selecionar arquivo',
-    confirmPayment: 'Confirmar Pagamento',
-    processing: 'Processando...',
     courseSummary: 'Resumo do Curso',
     total: 'Total',
-    paymentSuccess: 'Pagamento Confirmado!',
-    accessCodeGenerated: 'Seu codigo de acesso foi gerado',
-    accessCode: 'Codigo de Acesso',
-    saveAccessCode: 'Guarde este codigo com seguranca',
-    accessCodeDesc: 'Use este codigo para acessar o curso',
-    goToMyCourses: 'Ir para Meus Cursos',
-    myAccessCodes: 'Meus Codigos de Acesso',
     
     // Messages
     loginSuccess: 'Login realizado com sucesso!',
@@ -363,11 +362,13 @@ export const translations = {
     lessons: 'lessons',
     buyNow: 'Buy Now',
     viewCourse: 'View Course',
+    accessCourse: 'Access Course',
+    accessFor1Year: '1 year access',
     
     // Why Choose Us
     whyChooseUs: 'Why choose Shalom Learning?',
     feature1Title: 'Learn at your pace',
-    feature1Desc: 'Lifetime access to courses',
+    feature1Desc: '1 year access to courses',
     feature2Title: 'Quality content',
     feature2Desc: 'Practical and objective classes',
     feature3Title: 'Dedicated support',
@@ -376,15 +377,19 @@ export const translations = {
     // FAQ
     faqTitle: 'Frequently Asked Questions',
     faq1Q: 'How does course access work?',
-    faq1A: 'After payment confirmation, you will have lifetime access to the purchased course.',
+    faq1A: 'After payment confirmation, you will have 1 year access to the purchased course.',
     faq2Q: 'Can I watch the classes as many times as I want?',
-    faq2A: 'Yes! You can watch all classes as many times as you want, with no time limit.',
+    faq2A: 'Yes! You can watch all classes as many times as you want during the access period.',
     faq3Q: 'How is payment made?',
     faq3A: 'We accept payment via PIX, credit card, debit card and boleto through Mercado Pago.',
     faq4Q: 'Do courses have certificates?',
     faq4A: 'Yes, after completing all course classes, you will receive a certificate of completion.',
     faq5Q: 'Do I need prior knowledge?',
     faq5A: 'No! Our courses are developed for beginners, starting from scratch.',
+    faq6Q: 'What is the refund policy?',
+    faq6A: 'You can request a refund within 14 days of purchase if you are not satisfied. If you have already watched 5 or more lessons, refunds are only possible in case of technical problems.',
+    faq7Q: 'Can I access the course on my phone?',
+    faq7A: 'Yes! You can access the course on your phone, tablet or computer. You just need internet access.',
     
     // Footer
     contact: 'Contact',
@@ -402,6 +407,16 @@ export const translations = {
     createAccount: 'Create Account',
     loginTitle: 'Login to your account',
     signupTitle: 'Create new account',
+    forgotPassword: 'Forgot password?',
+    resetPassword: 'Reset Password',
+    resetPasswordTitle: 'Forgot your password?',
+    resetPasswordDesc: 'Enter your email to receive a reset link.',
+    sendResetLink: 'Send Link',
+    resetLinkSent: 'Link sent! Check your email.',
+    newPassword: 'New Password',
+    confirmNewPassword: 'Confirm New Password',
+    passwordReset: 'Password reset successfully!',
+    backToLogin: 'Back to Login',
     
     // Course Detail
     courseContent: 'Course Content',
@@ -427,25 +442,8 @@ export const translations = {
     checkout: 'Checkout',
     paymentMethod: 'Payment Method',
     pixPayment: 'PIX Payment',
-    step1: 'Step 1: Make the payment',
-    step1Desc: 'Scan the QR Code or copy the PIX code below',
-    copyCode: 'Copy Code',
-    codeCopied: 'Code copied!',
-    step2: 'Step 2: Send the receipt',
-    step2Desc: 'After making the payment, send a photo of the receipt',
-    uploadReceipt: 'Upload Receipt',
-    selectFile: 'Select file',
-    confirmPayment: 'Confirm Payment',
-    processing: 'Processing...',
     courseSummary: 'Course Summary',
     total: 'Total',
-    paymentSuccess: 'Payment Confirmed!',
-    accessCodeGenerated: 'Your access code has been generated',
-    accessCode: 'Access Code',
-    saveAccessCode: 'Keep this code safe',
-    accessCodeDesc: 'Use this code to access the course',
-    goToMyCourses: 'Go to My Courses',
-    myAccessCodes: 'My Access Codes',
     
     // Messages
     loginSuccess: 'Login successful!',
@@ -489,11 +487,13 @@ export const translations = {
     lessons: 'lecons',
     buyNow: 'Acheter maintenant',
     viewCourse: 'Voir le cours',
+    accessCourse: 'Acceder au Cours',
+    accessFor1Year: 'Acces pour 1 an',
     
     // Why Choose Us
     whyChooseUs: 'Pourquoi choisir Shalom Learning?',
     feature1Title: 'Apprenez a votre rythme',
-    feature1Desc: 'Acces a vie aux cours',
+    feature1Desc: 'Acces pour 1 an aux cours',
     feature2Title: 'Contenu de qualite',
     feature2Desc: 'Cours pratiques et objectifs',
     feature3Title: 'Support dedie',
@@ -502,15 +502,19 @@ export const translations = {
     // FAQ
     faqTitle: 'Questions frequentes',
     faq1Q: 'Comment fonctionne l\'acces aux cours?',
-    faq1A: 'Apres confirmation du paiement, vous aurez un acces a vie au cours achete.',
+    faq1A: 'Apres confirmation du paiement, vous aurez un acces pour 1 an au cours achete.',
     faq2Q: 'Puis-je regarder les cours autant de fois que je veux?',
-    faq2A: 'Oui! Vous pouvez regarder tous les cours autant de fois que vous voulez, sans limite de temps.',
+    faq2A: 'Oui! Vous pouvez regarder tous les cours autant de fois que vous voulez pendant la periode d\'acces.',
     faq3Q: 'Comment se fait le paiement?',
     faq3A: 'Nous acceptons le paiement via PIX, carte de credit, carte de debit et boleto via Mercado Pago.',
     faq4Q: 'Les cours ont-ils des certificats?',
     faq4A: 'Oui, apres avoir termine toutes les lecons du cours, vous recevrez un certificat de completion.',
     faq5Q: 'Ai-je besoin de connaissances prealables?',
     faq5A: 'Non! Nos cours sont developpes pour les debutants, en partant de zero.',
+    faq6Q: 'Quelle est la politique de remboursement?',
+    faq6A: 'Vous pouvez demander un remboursement dans les 14 jours suivant l\'achat si vous n\'etes pas satisfait. Si vous avez deja regarde 5 lecons ou plus, le remboursement n\'est possible qu\'en cas de problemes techniques.',
+    faq7Q: 'Puis-je acceder au cours sur mon telephone?',
+    faq7A: 'Oui! Vous pouvez acceder au cours sur votre telephone, tablette ou ordinateur. Il suffit d\'avoir acces a internet.',
     
     // Footer
     contact: 'Contact',
@@ -528,6 +532,16 @@ export const translations = {
     createAccount: 'Creer un compte',
     loginTitle: 'Connectez-vous a votre compte',
     signupTitle: 'Creer un nouveau compte',
+    forgotPassword: 'Mot de passe oublie?',
+    resetPassword: 'Reinitialiser le mot de passe',
+    resetPasswordTitle: 'Mot de passe oublie?',
+    resetPasswordDesc: 'Entrez votre email pour recevoir un lien de reinitialisation.',
+    sendResetLink: 'Envoyer le lien',
+    resetLinkSent: 'Lien envoye! Verifiez votre email.',
+    newPassword: 'Nouveau mot de passe',
+    confirmNewPassword: 'Confirmer le nouveau mot de passe',
+    passwordReset: 'Mot de passe reinitialise avec succes!',
+    backToLogin: 'Retour a la connexion',
     
     // Course Detail
     courseContent: 'Contenu du cours',
@@ -553,16 +567,6 @@ export const translations = {
     checkout: 'Paiement',
     paymentMethod: 'Methode de paiement',
     pixPayment: 'Paiement PIX',
-    step1: 'Etape 1: Effectuez le paiement',
-    step1Desc: 'Scannez le QR Code ou copiez le code PIX ci-dessous',
-    copyCode: 'Copier le code',
-    codeCopied: 'Code copie!',
-    step2: 'Etape 2: Envoyez le recu',
-    step2Desc: 'Apres avoir effectue le paiement, envoyez une photo du recu',
-    uploadReceipt: 'Telecharger le recu',
-    selectFile: 'Selectionner un fichier',
-    confirmPayment: 'Confirmer le paiement',
-    processing: 'Traitement...',
     courseSummary: 'Resume du cours',
     total: 'Total',
     
@@ -608,11 +612,13 @@ export const translations = {
     lessons: 'lecciones',
     buyNow: 'Comprar ahora',
     viewCourse: 'Ver curso',
+    accessCourse: 'Acceder al Curso',
+    accessFor1Year: 'Acceso por 1 ano',
     
     // Why Choose Us
     whyChooseUs: 'Por que elegir Shalom Learning?',
     feature1Title: 'Aprende a tu ritmo',
-    feature1Desc: 'Acceso de por vida a los cursos',
+    feature1Desc: 'Acceso por 1 ano a los cursos',
     feature2Title: 'Contenido de calidad',
     feature2Desc: 'Clases practicas y objetivas',
     feature3Title: 'Soporte dedicado',
@@ -621,15 +627,19 @@ export const translations = {
     // FAQ
     faqTitle: 'Preguntas frecuentes',
     faq1Q: 'Como funciona el acceso a los cursos?',
-    faq1A: 'Despues de la confirmacion del pago, tendras acceso de por vida al curso adquirido.',
+    faq1A: 'Despues de la confirmacion del pago, tendras acceso por 1 ano al curso adquirido.',
     faq2Q: 'Puedo ver las clases cuantas veces quiera?',
-    faq2A: 'Si! Puedes ver todas las clases cuantas veces quieras, sin limite de tiempo.',
+    faq2A: 'Si! Puedes ver todas las clases cuantas veces quieras durante el periodo de acceso.',
     faq3Q: 'Como se hace el pago?',
     faq3A: 'Aceptamos pago via PIX, tarjeta de credito, debito y boleto a traves de Mercado Pago.',
     faq4Q: 'Los cursos tienen certificado?',
     faq4A: 'Si, despues de completar todas las lecciones del curso, recibiras un certificado de finalizacion.',
     faq5Q: 'Necesito conocimientos previos?',
     faq5A: 'No! Nuestros cursos estan desarrollados para principiantes, desde cero.',
+    faq6Q: 'Cual es la politica de reembolso?',
+    faq6A: 'Puedes solicitar un reembolso dentro de los 14 dias posteriores a la compra si no estas satisfecho. Si ya has visto 5 lecciones o mas, el reembolso solo es posible en caso de problemas tecnicos.',
+    faq7Q: 'Puedo acceder al curso desde mi celular?',
+    faq7A: 'Si! Puedes acceder al curso desde tu celular, tablet o computadora. Solo necesitas acceso a internet.',
     
     // Footer
     contact: 'Contacto',
@@ -647,6 +657,16 @@ export const translations = {
     createAccount: 'Crear cuenta',
     loginTitle: 'Inicia sesion en tu cuenta',
     signupTitle: 'Crear nueva cuenta',
+    forgotPassword: 'Olvidaste tu contrasena?',
+    resetPassword: 'Restablecer Contrasena',
+    resetPasswordTitle: 'Olvidaste tu contrasena?',
+    resetPasswordDesc: 'Ingresa tu email para recibir un enlace de restablecimiento.',
+    sendResetLink: 'Enviar Enlace',
+    resetLinkSent: 'Enlace enviado! Revisa tu email.',
+    newPassword: 'Nueva Contrasena',
+    confirmNewPassword: 'Confirmar Nueva Contrasena',
+    passwordReset: 'Contrasena restablecida con exito!',
+    backToLogin: 'Volver al Login',
     
     // Course Detail
     courseContent: 'Contenido del curso',
@@ -672,16 +692,6 @@ export const translations = {
     checkout: 'Finalizar compra',
     paymentMethod: 'Metodo de pago',
     pixPayment: 'Pago PIX',
-    step1: 'Paso 1: Realiza el pago',
-    step1Desc: 'Escanea el codigo QR o copia el codigo PIX a continuacion',
-    copyCode: 'Copiar codigo',
-    codeCopied: 'Codigo copiado!',
-    step2: 'Paso 2: Envia el comprobante',
-    step2Desc: 'Despues de realizar el pago, envia una foto del comprobante',
-    uploadReceipt: 'Subir comprobante',
-    selectFile: 'Seleccionar archivo',
-    confirmPayment: 'Confirmar pago',
-    processing: 'Procesando...',
     courseSummary: 'Resumen del curso',
     total: 'Total',
     
@@ -727,11 +737,13 @@ export const translations = {
     lessons: 'leson',
     buyNow: 'Achte Kounye a',
     viewCourse: 'Gade Kou',
+    accessCourse: 'Aksede Kou',
+    accessFor1Year: 'Akse pou 1 ane',
     
     // Why Choose Us
     whyChooseUs: 'Poukisa chwazi Shalom Learning?',
     feature1Title: 'Aprann nan wout pa ou',
-    feature1Desc: 'Akse pou tout lavi nan kou yo',
+    feature1Desc: 'Akse pou 1 ane nan kou yo',
     feature2Title: 'Kontni kalite',
     feature2Desc: 'Klas pratik ak objektif',
     feature3Title: 'Sipo dedye',
@@ -740,15 +752,19 @@ export const translations = {
     // FAQ
     faqTitle: 'Kesyon yo Poze Souvan',
     faq1Q: 'Kijan akse nan kou yo fonksyone?',
-    faq1A: 'Apre konfimasyon peman, ou pral gen akse pou tout lavi nan kou ou te achte a.',
+    faq1A: 'Apre konfimasyon peman, ou pral gen akse pou 1 ane nan kou ou te achte a.',
     faq2Q: 'Eske mwen ka gade klas yo plizy e fwa?',
-    faq2A: 'Wi! Ou ka gade tout klas yo plizy e fwa ou vle, san limit tan.',
+    faq2A: 'Wi! Ou ka gade tout klas yo plizy e fwa ou vle pandan peryod akse a.',
     faq3Q: 'Kijan yo fe peman?',
     faq3A: 'Nou aksepte peman via PIX, kat kredi, kat debi ak boleto atravE Mercado Pago.',
     faq4Q: 'Eske kou yo gen setifika?',
     faq4A: 'Wi, apre ou fini tout klas kou a, ou pral resevwa yon setifika achevman.',
     faq5Q: 'Eske mwen bezwen konesans avan?',
     faq5A: 'Non! Kou nou yo devlope pou moun ki komanse, soti nan zewo.',
+    faq6Q: 'Ki politik ranbousman an?',
+    faq6A: 'Ou ka mande ranbousman nan 14 jou apre acha si ou pa satisfe. Si ou deja gade 5 leson oswa plis, ranbousman selman posib nan ka pwoblem teknik.',
+    faq7Q: 'Eske mwen ka aksede kou a sou telefon mwen?',
+    faq7A: 'Wi! Ou ka aksede kou a sou telefon ou, tablet oswa odinate. Ou jis bezwen aksede nan entenet.',
     
     // Footer
     contact: 'Kontak',
@@ -766,6 +782,16 @@ export const translations = {
     createAccount: 'Kreye Kont',
     loginTitle: 'Konekte nan kont ou',
     signupTitle: 'Kreye nouvo kont',
+    forgotPassword: 'Bliye modpas?',
+    resetPassword: 'Reyinisyalize Modpas',
+    resetPasswordTitle: 'Bliye modpas ou?',
+    resetPasswordDesc: 'Antre imel ou pou resevwa yon lyen reyinisyalizasyon.',
+    sendResetLink: 'Voye Lyen',
+    resetLinkSent: 'Lyen voye! Tcheke imel ou.',
+    newPassword: 'Nouvo Modpas',
+    confirmNewPassword: 'Konfime Nouvo Modpas',
+    passwordReset: 'Modpas reyinisyalize ak sikse!',
+    backToLogin: 'Retounen nan Login',
     
     // Course Detail
     courseContent: 'Kontni Kou',
@@ -791,16 +817,6 @@ export const translations = {
     checkout: 'Fenalize Acha',
     paymentMethod: 'Met od Peman',
     pixPayment: 'Peman PIX',
-    step1: 'Etap 1: Fe peman an',
-    step1Desc: 'Eskane kod QR la oswa kopye kod PIX la anba a',
-    copyCode: 'Kopye Kod',
-    codeCopied: 'Kod kopye!',
-    step2: 'Etap 2: Voye resi a',
-    step2Desc: 'Apre ou fe peman an, voye yon foto resi a',
-    uploadReceipt: 'Voye Resi',
-    selectFile: 'Chwazi fichye',
-    confirmPayment: 'Konfime Peman',
-    processing: 'Ap trete...',
     courseSummary: 'Rezime Kou',
     total: 'Total',
     
